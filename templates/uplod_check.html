@@ -1,0 +1,45 @@
+{% extends "layout.html" %}
+{% block title %}CheckMyAnswer{% endblock %}
+{% block body %}
+
+<style>
+    div.container h1{
+        font-size: 55px;
+        color: greenyellow;
+        padding-top: 215px;
+        font-weight: 600;
+        padding-bottom: 145px;
+        padding-right: 30px;
+    }
+    div.container p{
+        font-size: 18px;
+        color: black;
+        padding-top: 150px;
+        font-weight: 400;
+        padding-bottom: 100px;
+        padding-right: 30px;
+    }
+</style>
+
+<div class="container">
+    <div class = "row">
+    <div class="col">
+        <center>
+        <h1>CheckMyAnswer</h1>
+        </center>
+    </div>
+    <div class="col">
+        <form action="/predict" method="post" enctype="multipart/form-data">
+            <label for="answer_paper">Upload Answer Paper:</label>
+            <input type="file" name="answer_paper" accept="image/*" required>
+            
+            <label for="answer_key">Upload Answer Key:</label>
+            <input type="file" name="answer_key" accept="image/*" required>
+            
+            <button type="submit">Submit</button>
+        </form>        
+    </div>
+    </div>
+</div>
+
+{% endblock %}
