@@ -1,45 +1,131 @@
-{% extends "layout.html" %}
-{% block title %}CheckMyAnswer{% endblock %}
-{% block body %}
+<!DOCTYPE html>
+<html lang="en">
 
-<style>
-    div.container h1{
-        font-size: 55px;
-        color: greenyellow;
-        padding-top: 215px;
-        font-weight: 600;
-        padding-bottom: 145px;
-        padding-right: 30px;
-    }
-    div.container p{
-        font-size: 18px;
-        color: black;
-        padding-top: 150px;
-        font-weight: 400;
-        padding-bottom: 100px;
-        padding-right: 30px;
-    }
-</style>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<div class="container">
-    <div class = "row">
-    <div class="col">
-        <center>
-        <h1>CheckMyAnswer</h1>
-        </center>
-    </div>
-    <div class="col">
-        <form action="/predict" method="post" enctype="multipart/form-data">
-            <label for="answer_paper">Upload Answer Paper:</label>
+    <!-- Font Awesome -->
+    <script src="https://kit.fontawesome.com/48a1cfc20b.js" crossorigin="anonymous"></script>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/loader.css') }}">
+
+
+    <!-- Custom CSS -->
+    <style>
+        * {
+            font-family: 'Ubuntu', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #74ebd5, #9face6);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 800px;
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+
+        h1 {
+            color: #4CAF50;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        label {
+            font-weight: 500;
+            display: block;
+            margin: 10px 0 5px;
+            color: #333;
+        }
+
+        input[type="file"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #f9f9f9;
+            cursor: pointer;
+        }
+
+        .btn-submit {
+            background: #4CAF50;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.3s;
+            width: 100%;
+        }
+
+        .btn-submit:hover {
+            background: #388E3C;
+        }
+    </style>
+
+    <title>CheckMyAnswer</title>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1><i class="fas fa-check-circle"></i> CheckMyAnswer</h1>
+
+        <form id="uploadForm" action="/upload_check" method="POST" enctype="multipart/form-data">
+            <label for="answer_paper"><i class="fas fa-file-upload"></i> Upload Answer Paper:</label>
             <input type="file" name="answer_paper" accept="image/*" required>
-            
-            <label for="answer_key">Upload Answer Key:</label>
-            <input type="file" name="answer_key" accept="image/*" required>
-            
-            <button type="submit">Submit</button>
-        </form>        
-    </div>
-    </div>
-</div>
 
-{% endblock %}
+            <label for="answer_key"><i class="fas fa-file-upload"></i> Upload Answer Key:</label>
+            <input type="file" name="answer_key" accept="image/*" required>
+
+            <button type="submit" class="btn-submit"><i class="fas fa-upload"></i> Submit</button>
+        </form>
+    </div>
+    <div class="main_loader" style="display:none; align-items: center; justify-content: center;">
+        <div class="loader">
+            <svg viewBox="0 0 80 80">
+                <circle id="test" cx="40" cy="40" r="32"></circle>
+            </svg>
+        </div>
+        
+        <div class="loader triangle">
+            <svg viewBox="0 0 86 80">
+                <polygon points="43 8 79 72 7 72"></polygon>
+            </svg>
+        </div>
+        
+        <div class="loader">
+            <svg viewBox="0 0 80 80">
+                <rect x="8" y="8" width="64" height="64"></rect>
+            </svg>
+        </div>
+        <p class="loader_message">
+            <span class="typing">Answer evaluation in progress...</span>
+            <br>
+            <span class="blink">Please wait patiently, your results are on the way</span>
+        </p>
+    </div>
+</body>
+<script>
+    document.getElementById('uploadForm').addEventListener('submit', function() {
+        // Show the loader
+        document.querySelector('.main_loader').style.display = 'flex';
+    });
+</script>
+</html>
