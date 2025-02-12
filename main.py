@@ -1,11 +1,17 @@
 import tensorflow as tf
 import transformers
-from flask import Flask, render_template, request
+from flask import Flask,flash, render_template, request
 import numpy as np
 from huggingface_hub import from_pretrained_keras
 import tensorflow_hub as hub
+from transformers import AutoModel, AutoTokenizer
+import os as os
 
 app = Flask(__name__)
+
+UPLOAD_FOLDER = "uploads"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 
 class BertSemanticDataGenerator(tf.keras.utils.Sequence):
@@ -79,6 +85,10 @@ def checkMyAnswer():
 def answers():
     return render_template("answers.html")
 
+@app.route("/upload")
+def upolad_check():
+    return render_template("uplod_check.html")
+
 
 model = from_pretrained_keras("keras-io/bert-semantic-similarity")
 # model = tf.keras.models.load_model('saved_model_pooja.h5')
@@ -103,6 +113,55 @@ def check_similarity(sentence1, sentence2):
     # proba = f"{proba[idx]*100:.2f}%"
     # pred = labels[idx]
     # return f'The semantic similarity of two input sentences is {pred} with {proba} of probability'
+
+def my_ocr(image_path):
+    try:
+        tokenizer = AutoTokenizer.from_pretrained('ucaslcl/GOT-OCR2_0', trust_remote_code=True)
+        model = AutoModel.from_pretrained('ucaslcl/GOT-OCR2_0', trust_remote_code=True, low_cpu_mem_usage=True, device_map='cuda', use_safetensors=True, pad_token_id=tokenizer.eos_token_id)
+        model = model.eval().cuda()
+        res = model.chat(tokenizer, image_path, ocr_type='format')
+
+        return res
+    except Exception as e:
+        flash(f"An unexpected error occurred: {e}")
+
+
+@app.route("/upload_check", methods=["POST"])
+def upload():
+    if request.method == 'POST':
+        if "answer_paper" not in request.files or "answer_key" not in request.files:
+            return "Both images are required!", 400
+
+        answer_paper = request.files["answer_paper"]
+        answer_key = request.files["answer_key"]
+
+        # Save files temporarily
+        paper_path = os.path.join(UPLOAD_FOLDER, answer_paper.filename)
+        key_path = os.path.join(UPLOAD_FOLDER, answer_key.filename)
+
+        answer_paper.save(paper_path)
+        answer_key.save(key_path)
+
+        # Perform OCR on both images
+        student_answer_text = my_ocr(paper_path)
+        answer_key_text = my_ocr(key_path)
+        text = check_similarity(student_answer_text, answer_key_text)
+        print(text)
+
+        con_val = int(text["Contradiction"] * 100)
+        per_val = int(text["Perfect"]*100)
+        neu_val = int(text["Neutral"]*100)
+
+        dict = {}
+        dict['Contradiction'] = con_val
+        dict['Perfect'] = per_val
+        dict['Neutral'] = neu_val
+        dict['student_ans'] = student_answer_text
+        dict['model_ans'] = answer_key_text
+        dict['marks'] = per_val 
+        return render_template('answers.html', dict=dict)
+
+
 
 
 @app.route("/predict", methods=["POST"])
