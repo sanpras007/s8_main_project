@@ -1,0 +1,6 @@
+.vscode
+10env
+__pycache__
+utils.txt
+demo.py
+app.py
