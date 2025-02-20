@@ -1,17 +1,25 @@
 import tensorflow as tf
 import transformers
+import asyncio
 from flask import Flask,flash, render_template, request
+from DB_operations import insert_to_db, delete_all
+from database import client
 import numpy as np
 from huggingface_hub import from_pretrained_keras
 import tensorflow_hub as hub
 from transformers import AutoModel, AutoTokenizer
 import os as os
+import re
+from motor.motor_asyncio import AsyncIOMotorClient
 
 app = Flask(__name__)
 
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+
+db = client["database_name"]
+collection = db["collection_name"]
 
 
 class BertSemanticDataGenerator(tf.keras.utils.Sequence):
@@ -89,6 +97,10 @@ def answers():
 def upolad_check():
     return render_template("uplod_check.html")
 
+@app.route("/answerkey_upload")
+def answerkey_upload():
+    return render_template("ans_key_upload_check.html")
+
 
 model = from_pretrained_keras("keras-io/bert-semantic-similarity")
 # model = tf.keras.models.load_model('saved_model_pooja.h5')
@@ -97,6 +109,27 @@ model = from_pretrained_keras("keras-io/bert-semantic-similarity")
 #        custom_objects={'TFBertMainLayer':hub.TFBertMainLayer}
 # )
 labels = ["Contradiction", "Perfect", "Neutral"]
+
+
+async def parse_answer_key(input_text):
+    pattern = re.findall(r"(\d+)\.\s(.*?)(?:\.(\d+))", input_text, re.DOTALL)
+    result = []
+    
+    for match in pattern:
+        question_number = int(match[0])
+        model_answer = match[1].strip().replace("\n", " ")  # Removing extra newlines
+        max_marks = int(match[2])
+        
+        result.append({
+            "question_number": question_number,
+            "model_answer": model_answer,
+            "max_marks": max_marks
+        })
+    
+    db_name = "answer_keys"
+    # Insert data into the database
+    await delete_all(db_name)
+    await insert_to_db(db_name, result)
 
 
 def check_similarity(sentence1, sentence2):
@@ -124,6 +157,21 @@ def my_ocr(image_path):
         return res
     except Exception as e:
         flash(f"An unexpected error occurred: {e}")
+
+
+@app.route("/ans_key_check", methods=["POST"])
+def ans_key_upload():
+    if request.method == 'POST':
+        if "answer_key" not in request.files:
+            return "Upload answerkey first!", 400
+        
+        answer_key = request.files["answer_key"]
+        key_path = os.path.join(UPLOAD_FOLDER, answer_key.filename)
+        answer_key.save(key_path)
+        answer_key_text = my_ocr(key_path)
+        asyncio.run(parse_answer_key(answer_key_text))
+        render_template('index.html')
+        return "the fucntion completed success"
 
 
 @app.route("/upload_check", methods=["POST"])
