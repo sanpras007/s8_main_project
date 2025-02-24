@@ -10,6 +10,28 @@ async def connect_db():
     client = MongoClient(uri, server_api=ServerApi('1'))
     return client["grading_system"]
 
+async def retrieve_all_answers(db_name):
+    """Retrieve all questions, answers, and max marks from the database."""
+    try:
+        db = await connect_db()
+        collection = db[db_name]
+
+        results = collection.find({}, {"_id": 0})  # Exclude `_id` field
+
+        all_answers = {}
+        for result in results:
+            question_number = result.get("question_number")
+            if question_number:
+                all_answers[question_number] = {
+                    "model_answer": result.get("model_answer", ""),
+                    "max_marks": result.get("max_marks", 0)
+                }
+        
+        return all_answers
+    except Exception as e:
+        print(f"⚠️ Error retrieving all data: {e}")
+        return {}
+
 async def retrieve_answer_and_marks(db_name, question_number):
     try:
         db = await connect_db()

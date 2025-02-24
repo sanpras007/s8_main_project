@@ -16,7 +16,6 @@
 
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/loader.css') }}">
 
-
     <!-- Custom CSS -->
     <style>
         * {
@@ -24,7 +23,7 @@
         }
 
         body {
-            background: linear-gradient(135deg,rgb(198, 198, 198),rgb(86, 85, 85));
+            background: linear-gradient(135deg, rgb(198, 198, 198), rgb(86, 85, 85));
             height: 100vh;
             display: flex;
             align-items: center;
@@ -38,7 +37,7 @@
             border-radius: 15px;
             box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.2);
             text-align: center;
-            height:500px;
+            height: 400px;
         }
 
         h1 {
@@ -53,7 +52,7 @@
             display: block;
             margin: 10px 0 5px;
             color: #333;
-            text-align:left;
+            text-align: left;
         }
 
         input[type="file"] {
@@ -63,11 +62,11 @@
             border-radius: 5px;
             background: #f9f9f9;
             cursor: pointer;
-            margin-bottom:27px;
+            margin-bottom: 27px;
         }
 
         .btn-submit {
-            background:rgb(0, 0, 0);
+            background: rgb(0, 0, 0);
             color: white;
             padding: 12px 20px;
             border: none;
@@ -79,7 +78,7 @@
         }
 
         .btn-submit:hover {
-            background:rgb(56, 56, 56);
+            background: rgb(56, 56, 56);
         }
     </style>
 
@@ -89,31 +88,29 @@
 <body>
 
     <div class="container">
-        <h1><img src="static\favicon_io\SmartScribeLogo.png" width="50" height="50">SmartScribe</h1>
+        <h1><img src="static/favicon_io/SmartScribeLogo.png" width="50" height="50"> SmartScribe</h1>
 
         <form id="uploadForm" action="/upload_check" method="POST" enctype="multipart/form-data">
             <label for="answer_paper"><i class="fas fa-file-upload"></i> Upload Answer Paper:</label>
             <input type="file" name="answer_paper" accept="image/*" required>
 
-            <label for="answer_key"><i class="fas fa-file-upload"></i> Upload Answer Key:</label>
-            <input type="file" name="answer_key" accept="image/*" required>
-
             <button type="submit" class="btn-submit"><i class="fas fa-upload"></i> Submit</button>
         </form>
     </div>
+
     <div class="main_loader" style="display:none; align-items: center; justify-content: center;">
         <div class="loader">
             <svg viewBox="0 0 80 80">
                 <circle id="test" cx="40" cy="40" r="32"></circle>
             </svg>
         </div>
-        
+
         <div class="loader triangle">
             <svg viewBox="0 0 86 80">
                 <polygon points="43 8 79 72 7 72"></polygon>
             </svg>
         </div>
-        
+
         <div class="loader">
             <svg viewBox="0 0 80 80">
                 <rect x="8" y="8" width="64" height="64"></rect>
@@ -125,9 +122,10 @@
             <span class="blink">Please wait patiently, your results are on the way</span>
         </p>
     </div>
+
 </body>
 <script>
-    document.getElementById('uploadForm').addEventListener('submit', function() {
+    document.getElementById('uploadForm').addEventListener('submit', function () {
         // Show the loader
         document.querySelector('.main_loader').style.display = 'flex';
     });
