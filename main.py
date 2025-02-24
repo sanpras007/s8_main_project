@@ -1,11 +1,25 @@
 import tensorflow as tf
 import transformers
-from flask import Flask, render_template, request
+import asyncio
+from flask import Flask,flash, render_template, request
+from DB_operations import insert_to_db, delete_all, retrieve_all_answers
+from database import client
 import numpy as np
 from huggingface_hub import from_pretrained_keras
 import tensorflow_hub as hub
+from transformers import AutoModel, AutoTokenizer
+import os as os
+import re
+from motor.motor_asyncio import AsyncIOMotorClient
 
 app = Flask(__name__)
+
+UPLOAD_FOLDER = "uploads"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+
+db = client["database_name"]
+collection = db["collection_name"]
 
 
 class BertSemanticDataGenerator(tf.keras.utils.Sequence):
@@ -68,7 +82,7 @@ class BertSemanticDataGenerator(tf.keras.utils.Sequence):
 
 @app.route("/")
 def home():
-    return render_template("index.html")
+    return render_template("demo.html")
 
 
 @app.route("/checkMyAnswer")
@@ -79,6 +93,14 @@ def checkMyAnswer():
 def answers():
     return render_template("answers.html")
 
+@app.route("/upload")
+def upolad_check():
+    return render_template("uplod_check.html")
+
+@app.route("/answerkey_upload")
+def answerkey_upload():
+    return render_template("ans_key_upload_check.html")
+
 
 model = from_pretrained_keras("keras-io/bert-semantic-similarity")
 # model = tf.keras.models.load_model('saved_model_pooja.h5')
@@ -87,6 +109,27 @@ model = from_pretrained_keras("keras-io/bert-semantic-similarity")
 #        custom_objects={'TFBertMainLayer':hub.TFBertMainLayer}
 # )
 labels = ["Contradiction", "Perfect", "Neutral"]
+
+
+async def parse_answer_key(input_text):
+    pattern = re.findall(r"(\d+)\.\s(.*?)(?:\.(\d+))", input_text, re.DOTALL)
+    result = []
+    
+    for match in pattern:
+        question_number = int(match[0])
+        model_answer = match[1].strip().replace("\n", " ")  # Removing extra newlines
+        max_marks = int(match[2])
+        
+        result.append({
+            "question_number": question_number,
+            "model_answer": model_answer,
+            "max_marks": max_marks
+        })
+    
+    db_name = "answer_keys"
+    # Insert data into the database
+    await delete_all(db_name)
+    await insert_to_db(db_name, result)
 
 
 def check_similarity(sentence1, sentence2):
@@ -103,6 +146,115 @@ def check_similarity(sentence1, sentence2):
     # proba = f"{proba[idx]*100:.2f}%"
     # pred = labels[idx]
     # return f'The semantic similarity of two input sentences is {pred} with {proba} of probability'
+
+def my_ocr(image_path):
+    try:
+        tokenizer = AutoTokenizer.from_pretrained('ucaslcl/GOT-OCR2_0', trust_remote_code=True)
+        model = AutoModel.from_pretrained('ucaslcl/GOT-OCR2_0', trust_remote_code=True, low_cpu_mem_usage=True, device_map='cuda', use_safetensors=True, pad_token_id=tokenizer.eos_token_id)
+        model = model.eval().cuda()
+        res = model.chat(tokenizer, image_path, ocr_type='format')
+
+        return res
+    except Exception as e:
+        flash(f"An unexpected error occurred: {e}")
+
+
+
+def extract_answers(ocr_text):
+    """
+    Extracts answers from OCR text and maps them to question numbers.
+    
+    Args:
+        ocr_text (str): The extracted text from OCR.
+    
+    Returns:
+        dict: A dictionary mapping question numbers to their respective answers.
+    """
+    # Use regex to find question numbers followed by answers
+    pattern = r"(\d+)\.\s*(.*?)(?=\n\d+\.|\Z)"  # Matches question numbers and answers
+
+    matches = re.findall(pattern, ocr_text, re.DOTALL)
+
+    # Convert matches to dictionary
+    student_answers = {int(q_num): ans.strip().replace("\n", " ") for q_num, ans in matches}
+
+    evaluate_answers(student_answers)
+
+def evaluate_answers(student_answers):
+    """
+    Evaluates student answers against the answer key and assigns scaled marks.
+    """
+    results = {}
+    answer_key = asyncio.run(retrieve_all_answers("answer_keys"))
+    for q_num, student_text in student_answers.items():
+        if q_num in answer_key:
+            answer_key_text = answer_key[q_num]["model_answer"]
+            max_marks = answer_key[q_num]["max_marks"]
+
+            # Get similarity score
+            similarity_scores = check_similarity(student_text, answer_key_text)
+
+            # Extract similarity percentage
+            perfect_match_score = int(similarity_scores["Perfect"] * 100)
+
+            # Convert similarity percentage to max marks
+            scaled_marks = (perfect_match_score / 100) * max_marks
+
+            # Store results
+            results[q_num] = {
+                "question": q_num,
+                "student_ans": student_text,
+                "model_ans": answer_key_text,
+                "marks": round(scaled_marks, 2),
+                "max_marks": max_marks
+            }
+
+    return results
+
+
+@app.route("/ans_key_check", methods=["POST"])
+def ans_key_upload():
+    if request.method == 'POST':
+        if "answer_key" not in request.files:
+            return "Upload answerkey first!", 400
+        
+        answer_key = request.files["answer_key"]
+        key_path = os.path.join(UPLOAD_FOLDER, answer_key.filename)
+        answer_key.save(key_path)
+        answer_key_text = my_ocr(key_path)
+        asyncio.run(parse_answer_key(answer_key_text))
+        return render_template('success.html')
+
+
+
+@app.route("/upload_check", methods=["POST"])
+def upload():
+    if request.method == 'POST':
+        if "answer_paper" not in request.files:
+            return "Both images are required!", 400
+
+        answer_paper = request.files["answer_paper"]
+
+        # Save files temporarily
+        paper_path = os.path.join(UPLOAD_FOLDER, answer_paper.filename)
+
+        answer_paper.save(paper_path)
+
+        # Perform OCR on both images
+        student_answer_text = my_ocr(paper_path)
+
+        pattern = r"(\d+)\.\s*(.*?)(?=\n\d+\.|\Z)"  # Matches question numbers and answers
+
+        matches = re.findall(pattern, student_answer_text, re.DOTALL)
+
+        # Convert matches to dictionary
+        student_answers = {int(q_num): ans.strip().replace("\n", " ") for q_num, ans in matches}
+
+        results = evaluate_answers(student_answers)
+        
+        return render_template('answers.html', dict=results)
+
+
 
 
 @app.route("/predict", methods=["POST"])
