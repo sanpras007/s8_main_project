@@ -11,6 +11,8 @@ from transformers import AutoModel, AutoTokenizer
 import os as os
 import re
 from motor.motor_asyncio import AsyncIOMotorClient
+from sentence_transformers import SentenceTransformer
+from sklearn.metrics.pairwise import cosine_similarity
 
 app = Flask(__name__)
 
@@ -102,13 +104,22 @@ def answerkey_upload():
     return render_template("ans_key_upload_check.html")
 
 
-model = from_pretrained_keras("keras-io/bert-semantic-similarity")
-# model = tf.keras.models.load_model('saved_model_pooja.h5')
-# model = tf.keras.models.load_model(
-#        ('saved_model_pooja.h5'),
-#        custom_objects={'TFBertMainLayer':hub.TFBertMainLayer}
-# )
+
 labels = ["Contradiction", "Perfect", "Neutral"]
+
+def grade_answer(answer_key, student_ans):
+    model = SentenceTransformer('bert-base-nli-mean-tokens')
+    key_embedding = model.encode([answer_key])
+    student_embedding = model.encode([student_ans])
+    similarity = cosine_similarity(key_embedding, student_embedding)[0][0]
+    return round(similarity * 100, 2)  # Convert to percentage
+
+def final_score(answer_key, student_ans):
+    sbert_score = grade_answer(answer_key, student_ans)
+    match_score = check_similarity(answer_key, student_ans)
+    match_score = (match_score["Perfect"] * 100)
+    final = (sbert_score * 0.8) + (match_score * 0.2)  # Weighted combination
+    return int(final)
 
 
 async def parse_answer_key(input_text):
@@ -125,7 +136,7 @@ async def parse_answer_key(input_text):
             "model_answer": model_answer,
             "max_marks": max_marks
         })
-    
+
     db_name = "answer_keys"
     # Insert data into the database
     await delete_all(db_name)
@@ -133,6 +144,7 @@ async def parse_answer_key(input_text):
 
 
 def check_similarity(sentence1, sentence2):
+    model = from_pretrained_keras("keras-io/bert-semantic-similarity")
     sentence_pairs = np.array([[str(sentence1), str(sentence2)]])
     test_data = BertSemanticDataGenerator(
         sentence_pairs, labels=None, batch_size=1, shuffle=False, include_targets=False,
@@ -147,14 +159,17 @@ def check_similarity(sentence1, sentence2):
     # pred = labels[idx]
     # return f'The semantic similarity of two input sentences is {pred} with {proba} of probability'
 
-def my_ocr(image_path):
+def my_ocr(image_path,type):
     try:
         tokenizer = AutoTokenizer.from_pretrained('ucaslcl/GOT-OCR2_0', trust_remote_code=True)
         model = AutoModel.from_pretrained('ucaslcl/GOT-OCR2_0', trust_remote_code=True, low_cpu_mem_usage=True, device_map='cuda', use_safetensors=True, pad_token_id=tokenizer.eos_token_id)
         model = model.eval().cuda()
-        res = model.chat(tokenizer, image_path, ocr_type='format')
-
-        return res
+        if(type == "plain"):
+            res = model.chat(tokenizer, image_path, ocr_type='ocr')
+            return res
+        else:
+            res = model.chat(tokenizer, image_path, ocr_type='format')
+            return res
     except Exception as e:
         flash(f"An unexpected error occurred: {e}")
 
@@ -185,31 +200,33 @@ def evaluate_answers(student_answers):
     Evaluates student answers against the answer key and assigns scaled marks.
     """
     results = {}
+    total_marks = 0
+    acured_mark = 0
     answer_key = asyncio.run(retrieve_all_answers("answer_keys"))
     for q_num, student_text in student_answers.items():
         if q_num in answer_key:
             answer_key_text = answer_key[q_num]["model_answer"]
             max_marks = answer_key[q_num]["max_marks"]
-
+            total_marks += max_marks
             # Get similarity score
-            similarity_scores = check_similarity(student_text, answer_key_text)
+            similarity_scores = final_score(student_text, answer_key_text)
 
             # Extract similarity percentage
-            perfect_match_score = int(similarity_scores["Perfect"] * 100)
+            perfect_match_score = similarity_scores
 
             # Convert similarity percentage to max marks
             scaled_marks = (perfect_match_score / 100) * max_marks
-
+            acured_mark += round(scaled_marks, 1)
             # Store results
             results[q_num] = {
                 "question": q_num,
                 "student_ans": student_text,
                 "model_ans": answer_key_text,
-                "marks": round(scaled_marks, 2),
-                "max_marks": max_marks
+                "marks": round(scaled_marks, 1),
+                "max_marks": max_marks,
             }
 
-    return results
+    return results, round(total_marks, 1), round(acured_mark, 1)
 
 
 @app.route("/ans_key_check", methods=["POST"])
@@ -221,7 +238,7 @@ def ans_key_upload():
         answer_key = request.files["answer_key"]
         key_path = os.path.join(UPLOAD_FOLDER, answer_key.filename)
         answer_key.save(key_path)
-        answer_key_text = my_ocr(key_path)
+        answer_key_text = my_ocr(key_path,"plain")
         asyncio.run(parse_answer_key(answer_key_text))
         return render_template('success.html')
 
@@ -231,7 +248,7 @@ def ans_key_upload():
 def upload():
     if request.method == 'POST':
         if "answer_paper" not in request.files:
-            return "Both images are required!", 400
+            return "images not required!", 400
 
         answer_paper = request.files["answer_paper"]
 
@@ -241,7 +258,7 @@ def upload():
         answer_paper.save(paper_path)
 
         # Perform OCR on both images
-        student_answer_text = my_ocr(paper_path)
+        student_answer_text = my_ocr(paper_path,"format")
 
         pattern = r"(\d+)\.\s*(.*?)(?=\n\d+\.|\Z)"  # Matches question numbers and answers
 
@@ -250,9 +267,9 @@ def upload():
         # Convert matches to dictionary
         student_answers = {int(q_num): ans.strip().replace("\n", " ") for q_num, ans in matches}
 
-        results = evaluate_answers(student_answers)
+        results, total_marks, acured_marks = evaluate_answers(student_answers)
         
-        return render_template('answers.html', dict=results)
+        return render_template('answers.html', dict=results , total_marks=total_marks, acured_marks=acured_marks)
 
 
 

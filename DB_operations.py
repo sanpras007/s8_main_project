@@ -51,17 +51,19 @@ async def insert_to_db(db_name, data):
         db = await connect_db()
         collection = db[db_name]
         
-        if isinstance(data, list):  # Check if data is a list for bulk insert
-            collection.insert_many(data)
-        elif isinstance(data, dict):  # Handle single document insert
-            collection.insert_one(data)
+        if isinstance(data, list): 
+            if data:  # Ensure data is not empty
+                result = collection.insert_many(data)
+                print(f"Inserted {len(result.inserted_ids)} documents.")
+            else:
+                print("⚠️ No valid data to insert.")
+        elif isinstance(data, dict): 
+            result = collection.insert_one(data)
+            print(f"Inserted 1 document with ID: {result.inserted_id}")
         else:
             raise ValueError("Data must be a dictionary or list of dictionaries.")
-        
-        print(f"✅ Successfully added data to database: {db_name}.")
     except Exception as e:
         print(f"⚠️ Error inserting data: {e}")
-
 
 
 async def delete_all(db_name):
