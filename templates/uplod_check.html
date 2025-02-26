@@ -16,70 +16,11 @@
 
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/loader.css') }}">
 
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/upload.css') }}">
+
     <!-- Custom CSS -->
     <style>
-        * {
-            font-family: 'Ubuntu', sans-serif;
-        }
-
-        body {
-            background: linear-gradient(135deg, rgb(198, 198, 198), rgb(86, 85, 85));
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .container {
-            width: 800px;
-            background: white;
-            padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.2);
-            text-align: center;
-            height: 400px;
-        }
-
-        h1 {
-            color: black;
-            font-weight: 700;
-            margin-bottom: 25px;
-            font-family: 'Times New Roman', serif;
-        }
-
-        label {
-            font-weight: 500;
-            display: block;
-            margin: 10px 0 5px;
-            color: #333;
-            text-align: left;
-        }
-
-        input[type="file"] {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            background: #f9f9f9;
-            cursor: pointer;
-            margin-bottom: 27px;
-        }
-
-        .btn-submit {
-            background: rgb(0, 0, 0);
-            color: white;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 5px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: 0.3s;
-            width: 100%;
-        }
-
-        .btn-submit:hover {
-            background: rgb(56, 56, 56);
-        }
+       
     </style>
 
     <title>SmartScribe</title>
@@ -92,7 +33,11 @@
 
         <form id="uploadForm" action="/upload_check" method="POST" enctype="multipart/form-data">
             <label for="answer_paper"><i class="fas fa-file-upload"></i> Upload Answer Paper:</label>
-            <input type="file" name="answer_paper" accept="image/*" required>
+            <input type="file" id="fileInput" name="answer_paper" accept="image/*" required>
+            <div class="image-preview" id="imagePreview">
+                <p>Image Preview:</p>
+                <img id="previewImg" src="" alt="Image Preview">
+            </div>
 
             <button type="submit" class="btn-submit"><i class="fas fa-upload"></i> Submit</button>
         </form>
@@ -125,6 +70,17 @@
 
 </body>
 <script>
+    document.getElementById('fileInput').addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('previewImg').src = e.target.result;
+                document.getElementById('imagePreview').style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+    });
     document.getElementById('uploadForm').addEventListener('submit', function () {
         // Show the loader
         document.querySelector('.main_loader').style.display = 'flex';

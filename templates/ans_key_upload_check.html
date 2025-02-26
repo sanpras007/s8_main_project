@@ -16,85 +16,9 @@
 
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/loader.css') }}">
 
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/upload.css') }}">
+
     <style>
-        * {
-            font-family: 'Ubuntu', sans-serif;
-        }
-
-        body {
-            background: linear-gradient(135deg, #292929, #1a1a1a);
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-        }
-
-        .container {
-            width: 800px;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0px 10px 30px rgba(255, 255, 255, 0.2);
-            text-align: center;
-            height: auto;
-            backdrop-filter: blur(10px);
-        }
-
-        h1 {
-            color: white;
-            font-weight: 700;
-            margin-bottom: 25px;
-            font-family: 'Times New Roman', serif;
-        }
-
-        label {
-            font-weight: 500;
-            display: block;
-            margin: 10px 0 5px;
-            color: white;
-            text-align: left;
-        }
-
-        input[type="file"] {
-            width: 100%;
-            padding: 10px;
-            border: none;
-            border-radius: 5px;
-            background: rgba(255, 255, 255, 0.2);
-            cursor: pointer;
-            color: white;
-        }
-
-        .btn-submit {
-            background: #ff6600;
-            color: white;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 5px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: 0.3s;
-            width: 100%;
-            margin-top:10px
-        }
-
-        .btn-submit:hover {
-            background: #e65c00;
-        }
-
-        .image-preview {
-            display: none;
-            margin-top: 20px;
-            text-align: center;
-        }
-
-        .image-preview img {
-            max-width: 100%;
-            max-height: 250px;
-            border-radius: 10px;
-            box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
-        }
     </style>
 
     <title>SmartScribe</title>
