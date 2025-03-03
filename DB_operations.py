@@ -3,10 +3,13 @@ from pymongo.server_api import ServerApi
 import os
 import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Connect to MongoDB
 async def connect_db():
-    uri = "mongodb+srv://21cs445:KVgPv5yxySNKaH9m@cluster0.uz0ck.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+    uri = os.getenv("MONGO_URI")
     client = MongoClient(uri, server_api=ServerApi('1'))
     return client["grading_system"]
 
