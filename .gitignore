@@ -1,4 +1,5 @@
 .vscode
+.env
 10env
 __pycache__
 utils.txt
@@ -11,3 +12,4 @@ demo_ans_for_test.jpg
 test.jpg
 test_ans_key.jpg
 performance_analysis.py
+Images

@@ -32,6 +32,12 @@
         <h1><img src="static/favicon_io/SmartScribeLogo.png" width="50" height="50"> SmartScribe</h1>
 
         <form id="uploadForm" action="/upload_check" method="POST" enctype="multipart/form-data">
+            <label for="student_name"><i class="fas fa-user"></i> Student Name:</label>
+            <input type="text" id="student_name" name="student_name" placeholder="Enter student name" required>
+
+            <label for="roll_number"><i class="fas fa-id-card"></i> Roll Number:</label>
+            <input type="text" id="roll_number" name="roll_number" placeholder="Enter roll number" required>
+            
             <label for="answer_paper"><i class="fas fa-file-upload"></i> Upload Answer Paper:</label>
             <input type="file" id="fileInput" name="answer_paper" accept="image/*" required>
             <div class="image-preview" id="imagePreview">

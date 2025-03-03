@@ -13,6 +13,7 @@ import re
 from motor.motor_asyncio import AsyncIOMotorClient
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
+from chatbot import get_answer_feedback
 
 app = Flask(__name__)
 
@@ -22,6 +23,13 @@ app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 db = client["database_name"]
 collection = db["collection_name"]
+
+bert_model = from_pretrained_keras("keras-io/bert-semantic-similarity")
+labels = ["Contradiction", "Perfect", "Neutral"]
+
+tokenizer = AutoTokenizer.from_pretrained('ucaslcl/GOT-OCR2_0', trust_remote_code=True)
+ocr_model = AutoModel.from_pretrained('ucaslcl/GOT-OCR2_0', trust_remote_code=True, low_cpu_mem_usage=True, device_map='cuda', use_safetensors=True, pad_token_id=tokenizer.eos_token_id)
+ocr_model = ocr_model.eval().cuda()
 
 
 class BertSemanticDataGenerator(tf.keras.utils.Sequence):
@@ -105,8 +113,6 @@ def answerkey_upload():
 
 
 
-labels = ["Contradiction", "Perfect", "Neutral"]
-
 def grade_answer(answer_key, student_ans):
     model = SentenceTransformer('bert-base-nli-mean-tokens')
     key_embedding = model.encode([answer_key])
@@ -144,12 +150,11 @@ async def parse_answer_key(input_text):
 
 
 def check_similarity(sentence1, sentence2):
-    model = from_pretrained_keras("keras-io/bert-semantic-similarity")
     sentence_pairs = np.array([[str(sentence1), str(sentence2)]])
     test_data = BertSemanticDataGenerator(
         sentence_pairs, labels=None, batch_size=1, shuffle=False, include_targets=False,
     )
-    probs = model.predict(test_data[0])[0]
+    probs = bert_model.predict(test_data[0])[0]
 
     labels_probs = {labels[i]: float(probs[i]) for i, _ in enumerate(labels)}
     return labels_probs
@@ -161,45 +166,43 @@ def check_similarity(sentence1, sentence2):
 
 def my_ocr(image_path,type):
     try:
-        tokenizer = AutoTokenizer.from_pretrained('ucaslcl/GOT-OCR2_0', trust_remote_code=True)
-        model = AutoModel.from_pretrained('ucaslcl/GOT-OCR2_0', trust_remote_code=True, low_cpu_mem_usage=True, device_map='cuda', use_safetensors=True, pad_token_id=tokenizer.eos_token_id)
-        model = model.eval().cuda()
         if(type == "plain"):
-            res = model.chat(tokenizer, image_path, ocr_type='ocr')
+            res = ocr_model.chat(tokenizer, image_path, ocr_type='ocr')
             return res
         else:
-            res = model.chat(tokenizer, image_path, ocr_type='format')
+            res = ocr_model.chat(tokenizer, image_path, ocr_type='format')
             return res
     except Exception as e:
         flash(f"An unexpected error occurred: {e}")
 
 
 
-def extract_answers(ocr_text):
-    """
-    Extracts answers from OCR text and maps them to question numbers.
+# def extract_answers(ocr_text):
+#     """
+#     Extracts answers from OCR text and maps them to question numbers.
     
-    Args:
-        ocr_text (str): The extracted text from OCR.
+#     Args:
+#         ocr_text (str): The extracted text from OCR.
     
-    Returns:
-        dict: A dictionary mapping question numbers to their respective answers.
-    """
-    # Use regex to find question numbers followed by answers
-    pattern = r"(\d+)\.\s*(.*?)(?=\n\d+\.|\Z)"  # Matches question numbers and answers
+#     Returns:
+#         dict: A dictionary mapping question numbers to their respective answers.
+#     """
+#     # Use regex to find question numbers followed by answers
+#     pattern = r"(\d+)\.\s*(.*?)(?=\n\d+\.|\Z)"  # Matches question numbers and answers
 
-    matches = re.findall(pattern, ocr_text, re.DOTALL)
+#     matches = re.findall(pattern, ocr_text, re.DOTALL)
 
-    # Convert matches to dictionary
-    student_answers = {int(q_num): ans.strip().replace("\n", " ") for q_num, ans in matches}
+#     # Convert matches to dictionary
+#     student_answers = {int(q_num): ans.strip().replace("\n", " ") for q_num, ans in matches}
 
-    evaluate_answers(student_answers)
+#     evaluate_answers(student_answers)
 
 def evaluate_answers(student_answers):
     """
     Evaluates student answers against the answer key and assigns scaled marks.
     """
-    results = {}
+    questions = []
+    examdata = {}
     total_marks = 0
     acured_mark = 0
     answer_key = asyncio.run(retrieve_all_answers("answer_keys"))
@@ -217,16 +220,22 @@ def evaluate_answers(student_answers):
             # Convert similarity percentage to max marks
             scaled_marks = (perfect_match_score / 100) * max_marks
             acured_mark += round(scaled_marks, 1)
+            feedback = get_answer_feedback(answer_key_text,student_text,perfect_match_score)
             # Store results
-            results[q_num] = {
-                "question": q_num,
+            questions.append({
+                "id": q_num,
+                "question_num": q_num,
                 "student_ans": student_text,
                 "model_ans": answer_key_text,
                 "marks": round(scaled_marks, 1),
                 "max_marks": max_marks,
-            }
-
-    return results, round(total_marks, 1), round(acured_mark, 1)
+                "feedback": feedback
+            })
+    examdata["totalmarks"] = total_marks
+    examdata["accuredmarks"] = acured_mark
+    examdata["result"] = questions
+    import pdb;pdb.set_trace()
+    return examdata
 
 
 @app.route("/ans_key_check", methods=["POST"])
@@ -267,9 +276,13 @@ def upload():
         # Convert matches to dictionary
         student_answers = {int(q_num): ans.strip().replace("\n", " ") for q_num, ans in matches}
 
-        results, total_marks, acured_marks = evaluate_answers(student_answers)
+        results = evaluate_answers(student_answers)
+
+        student_name = request.form.get("student_name")
+        roll_num = request.form.get("roll_number")
+        import pdb;pdb.set_trace()
         
-        return render_template('answers.html', dict=results , total_marks=total_marks, acured_marks=acured_marks)
+        return render_template('result.html', results_data=results, name=student_name, roll_no=roll_num)
 
 
 
