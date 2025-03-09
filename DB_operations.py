@@ -2,6 +2,7 @@ from pymongo import MongoClient
 from pymongo.server_api import ServerApi
 import os
 import asyncio
+import bcrypt
 from motor.motor_asyncio import AsyncIOMotorClient
 from dotenv import load_dotenv
 
@@ -79,3 +80,38 @@ async def delete_all(db_name):
         print(f"⚠️ Error deleting data: {e}")
 
 
+
+
+#-------------------------|
+# USER SIGN IN AND LOGIN  |
+#-------------------------|
+
+
+async def create_user(name, email, password):
+    """Hash password and store user in DB."""
+    hashed_pw = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+    try:
+        db = await connect_db()
+        users_collection = db["users"]
+        user = {
+            "name": name,
+            "email": email,
+            "password": hashed_pw
+        }
+        
+        if users_collection.find_one({"email": email}):
+            return {"error": "User already exists"}
+        
+        users_collection.insert_one(user)
+        return {"message": "User registered successfully"}
+    except Exception as e:
+        print(f"⚠️ Error creating data: {e}")
+
+async def get_user_by_email(email):
+    """Retrieve a user by email (excluding `_id`)."""
+    try:
+        db = await connect_db()
+        users_collection = db["users"]
+        return users_collection.find_one({"email": email}, {"_id": 0})  # Exclude `_id`
+    except Exception as e:
+        print(f"⚠️ Error creating data: {e}")

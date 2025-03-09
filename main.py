@@ -2,34 +2,42 @@ import tensorflow as tf
 import transformers
 import asyncio
 from flask import Flask,flash, render_template, request
-from DB_operations import insert_to_db, delete_all, retrieve_all_answers
+from DB_operations import insert_to_db, delete_all, retrieve_all_answers,create_user, get_user_by_email
 from database import client
 import numpy as np
 from huggingface_hub import from_pretrained_keras
 import tensorflow_hub as hub
 from transformers import AutoModel, AutoTokenizer
 import os as os
+import bcrypt
 import re
+import torch
+import fitz
 from motor.motor_asyncio import AsyncIOMotorClient
+from flask_cors import CORS  # Import CORS
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
-from chatbot import get_answer_feedback
+from chatbot import get_answer_feedback,chat
+from flask import Blueprint, request, jsonify
+from flask_jwt_extended import create_access_token, JWTManager, jwt_required, get_jwt_identity
+
 
 app = Flask(__name__)
+CORS(app, resources={r"/chat": {"origins": "http://127.0.0.1:5000"}})
 
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
-db = client["database_name"]
-collection = db["collection_name"]
+
 
 bert_model = from_pretrained_keras("keras-io/bert-semantic-similarity")
 labels = ["Contradiction", "Perfect", "Neutral"]
 
 tokenizer = AutoTokenizer.from_pretrained('ucaslcl/GOT-OCR2_0', trust_remote_code=True)
-ocr_model = AutoModel.from_pretrained('ucaslcl/GOT-OCR2_0', trust_remote_code=True, low_cpu_mem_usage=True, device_map='cuda', use_safetensors=True, pad_token_id=tokenizer.eos_token_id)
-ocr_model = ocr_model.eval().cuda()
+ocr_model = AutoModel.from_pretrained('ucaslcl/GOT-OCR2_0', trust_remote_code=True, low_cpu_mem_usage=True, use_safetensors=True, pad_token_id=tokenizer.eos_token_id)
+device = "cuda" if torch.cuda.is_available() else "cpu"
+ocr_model = ocr_model.eval().to(device)
 
 
 class BertSemanticDataGenerator(tf.keras.utils.Sequence):
@@ -92,7 +100,7 @@ class BertSemanticDataGenerator(tf.keras.utils.Sequence):
 
 @app.route("/")
 def home():
-    return render_template("demo.html")
+    return render_template("main.html")
 
 
 @app.route("/checkMyAnswer")
@@ -123,7 +131,7 @@ def grade_answer(answer_key, student_ans):
 def final_score(answer_key, student_ans):
     sbert_score = grade_answer(answer_key, student_ans)
     match_score = check_similarity(answer_key, student_ans)
-    match_score = (match_score["Perfect"] * 100)
+    match_score = (match_score.get("Perfect", 0) * 100)
     final = (sbert_score * 0.8) + (match_score * 0.2)  # Weighted combination
     return int(final)
 
@@ -159,10 +167,6 @@ def check_similarity(sentence1, sentence2):
     labels_probs = {labels[i]: float(probs[i]) for i, _ in enumerate(labels)}
     return labels_probs
 
-    # idx = np.argmax(proba)
-    # proba = f"{proba[idx]*100:.2f}%"
-    # pred = labels[idx]
-    # return f'The semantic similarity of two input sentences is {pred} with {proba} of probability'
 
 def my_ocr(image_path,type):
     try:
@@ -175,27 +179,6 @@ def my_ocr(image_path,type):
     except Exception as e:
         flash(f"An unexpected error occurred: {e}")
 
-
-
-# def extract_answers(ocr_text):
-#     """
-#     Extracts answers from OCR text and maps them to question numbers.
-    
-#     Args:
-#         ocr_text (str): The extracted text from OCR.
-    
-#     Returns:
-#         dict: A dictionary mapping question numbers to their respective answers.
-#     """
-#     # Use regex to find question numbers followed by answers
-#     pattern = r"(\d+)\.\s*(.*?)(?=\n\d+\.|\Z)"  # Matches question numbers and answers
-
-#     matches = re.findall(pattern, ocr_text, re.DOTALL)
-
-#     # Convert matches to dictionary
-#     student_answers = {int(q_num): ans.strip().replace("\n", " ") for q_num, ans in matches}
-
-#     evaluate_answers(student_answers)
 
 def evaluate_answers(student_answers):
     """
@@ -220,7 +203,7 @@ def evaluate_answers(student_answers):
             # Convert similarity percentage to max marks
             scaled_marks = (perfect_match_score / 100) * max_marks
             acured_mark += round(scaled_marks, 1)
-            feedback = get_answer_feedback(answer_key_text,student_text,perfect_match_score)
+            feedback = get_answer_feedback(answer_key_text,student_text,perfect_match_score,acured_mark)
             # Store results
             questions.append({
                 "id": q_num,
@@ -234,7 +217,7 @@ def evaluate_answers(student_answers):
     examdata["totalmarks"] = total_marks
     examdata["accuredmarks"] = acured_mark
     examdata["result"] = questions
-    import pdb;pdb.set_trace()
+
     return examdata
 
 
@@ -247,9 +230,21 @@ def ans_key_upload():
         answer_key = request.files["answer_key"]
         key_path = os.path.join(UPLOAD_FOLDER, answer_key.filename)
         answer_key.save(key_path)
-        answer_key_text = my_ocr(key_path,"plain")
+        if answer_key.filename.endswith(".pdf"):
+            answer_key_text = extract_text_from_pdf(key_path)
+        else:
+            answer_key_text = my_ocr(key_path,"plain")
         asyncio.run(parse_answer_key(answer_key_text))
         return render_template('success.html')
+    
+
+def extract_text_from_pdf(pdf_path):
+    """Extracts text directly from a PDF file."""
+    text = ""
+    with fitz.open(pdf_path) as doc:
+        for page in doc:
+            text += page.get_text("text") + "\n"
+    return text
 
 
 
@@ -280,7 +275,7 @@ def upload():
 
         student_name = request.form.get("student_name")
         roll_num = request.form.get("roll_number")
-        import pdb;pdb.set_trace()
+
         
         return render_template('result.html', results_data=results, name=student_name, roll_no=roll_num)
 
@@ -315,6 +310,68 @@ def predict():
 @app.route("/result")
 def result():
     return render_template("result.html")
+
+
+@app.route("/chat", methods=["POST"])
+def user_chat():
+    try:
+        data = request.json
+        print("Received data:", data)  # Debugging
+
+        user_message = data.get("message")
+        if not user_message:
+            return jsonify({"error": "No message provided"}), 400
+
+        response = chat(user_message)
+        return jsonify({"response": response})
+
+    except Exception as e:
+        print(f"❌ Error in /chat: {e}")
+        return jsonify({"error": "Internal Server Error"}), 500
+
+
+# @app.route("/auth")
+# def auth():
+#     return render_template("auth.html")
+
+
+
+# @app.route("/signup", methods=["POST"])
+# async def signup():
+#     """Signup a user."""
+#     data = request.json
+#     name, email, password = data.get("name"), data.get("email"), data.get("password")
+
+#     if not name or not email or not password:
+#         return jsonify({"error": "Missing fields"}), 400
+
+#     result = await create_user(name, email, password)
+#     if "error" in result:
+#         return jsonify(result), 400
+
+#     return jsonify(result), 201
+
+
+# @app.route("/login", methods=["POST"])
+# async def login():
+#     """Login a user and return JWT."""
+#     data = request.json
+#     email, password = data.get("email"), data.get("password")
+
+#     user = await get_user_by_email(email)
+#     if not user:
+#         return jsonify({"error": "User not found"}), 404
+
+#     # bcrypt is not async, so run it in a separate thread
+#     is_valid = await asyncio.to_thread(
+#         bcrypt.checkpw, password.encode('utf-8'), user["password"]
+#     )
+
+#     if is_valid:
+#         access_token = create_access_token(identity=email)
+#         return jsonify({"access_token": access_token}), 200
+
+#     return jsonify({"error": "Invalid credentials"}), 401
 
 
 if __name__ == '__main__':
