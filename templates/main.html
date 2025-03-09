@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartScribe - AI-Powered Answer Evaluation</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/main.css') }}">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <a href="/">
+                        <span class="gradient-text">SmartScribe</span>
+                    </a>
+                </div>
+                
+                <nav class="desktop-nav">
+                    <ul>
+                        <li><a href="/upload">SmartScribe</a></li>
+                        <li><a href="/answerkey_upload">Upload Answer Key</a></li>
+                        <li><a href="/checkMyAnswer">Check My Answer</a></li>
+                    </ul>
+                    <a href="/auth" class="btn btn-primary">Sign In</a>
+                </nav>
+                
+                <button class="mobile-menu-btn" id="mobileMenuBtn">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+            
+            <div class="mobile-nav" id="mobileNav">
+                <ul>
+                    <li><a href="/upload">SmartScribe</a></li>
+                    <li><a href="/answerkey_upload">Upload Answer Key</a></li>
+                    <li><a href="/checkMyAnswer">Check My Answer</a></li>
+                    <li><a href="/auth" class="btn btn-primary">Sign In</a></li>
+                </ul>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="container">
+                <div class="hero-content">
+                    <div class="hero-text">
+                        <h1 class="gradient-text">Smart Exam Valuation</h1>
+                        <p>Streamline your exam evaluation process with our AI-powered platform. Upload, analyze, and get instant feedback on answer papers.</p>
+                        <div class="hero-buttons">
+                            <a href="/upload-answerpaper" class="btn btn-gradient">Get Started</a>
+                            <a href="/check-my-answer" class="btn btn-outline">Check My Answer</a>
+                        </div>
+                    </div>
+                    <div class="hero-image">
+                        <div class="vector-container">
+                          <div class="vector-container" id="lottie-container"></div>
+                        </div>
+                        <!-- Space for additional image -->
+                        <div id="lottiee" style="display:flex;">
+                            <lottie-player 
+                                src="{{ url_for('static', filename='animation.json') }}"
+                                background="transparent"
+                                speed="1"
+                                loop 
+                                autoplay>
+                            </lottie-player>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section class="how-it-works">
+            <div class="container">
+                <h2>How It Works</h2>
+                <div class="steps-container">
+                    <div class="step-card">
+                        <div class="step-number">1</div>
+                        <h3>Upload</h3>
+                        <p>Upload your answer papers in various formats including PDF, images, or scanned documents.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-number">2</div>
+                        <h3>Analyze</h3>
+                        <p>Our AI analyzes the content, comparing it with model answers and evaluation criteria.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-number">3</div>
+                        <h3>Results</h3>
+                        <p>Get detailed feedback, scores, and suggestions for improvement instantly.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Chat Bot -->
+    <div class="chat-container" id="chatContainer">
+        <button class="chat-toggle" id="chatToggle">
+            <i class="fas fa-comment-dots" id="chatIcon"></i>
+            <i class="fas fa-times" id="closeIcon"></i>
+        </button>
+        
+        <div class="chat-window" id="chatWindow">
+            <div class="chat-header">
+                <h3>SmartScribe Assistant</h3>
+            </div>
+            
+            <div class="chat-messages" id="chatMessages">
+                <div class="message bot-message">
+                    <div class="message-content">Hi there! I'm your SamartScribe assistant. How can I help you today?</div>
+                </div>
+                <!-- Messages will be added here dynamically -->
+            </div>
+            
+            <form class="chat-input-form" id="chatForm">
+                <input type="text" id="chatInput" placeholder="Type your message..." class="chat-input">
+                <button type="submit" class="chat-send">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='scripts/main.js') }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.9.6/lottie.min.js"></script>
+</body>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+  var animationContainer = document.getElementById("lottie-container");
+
+  var animation = lottie.loadAnimation({
+      container: animationContainer, // The div where the animation will play
+      renderer: "svg", // Use 'svg', 'canvas', or 'html'
+      loop: true, // Set to false if you don't want it to loop
+      autoplay: true,
+      path: "{{ url_for('static', filename='animations/student_new.json') }}" // Path to your downloaded .lottie file
+  });
+});
+</script>
+</html>

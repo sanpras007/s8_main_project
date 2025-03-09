@@ -25,55 +25,421 @@
 
     <title>SmartScribe</title>
 </head>
-
+<style>
+:root {
+    --primary: #6366f1;
+    --primary-dark: #4f46e5;
+    --secondary: #f3f4f6;
+    --text-dark: #1f2937;
+    --text-light: #6b7280;
+    --white: #ffffff;
+    --success: #22c55e;
+    --warning: #f59e0b;
+}
+body {
+    font-family: 'Ubuntu', sans-serif;
+    margin: 0;
+    padding: 0;
+    color: var(--text-dark);
+    background-color: #f9fafb;
+    overflow-x: hidden;
+}
+.navbar {
+    background-color: var(--white);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    padding: 1rem 0;
+}
+.navbar-brand {
+    display: flex;
+    align-items: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary);
+    text-decoration: none;
+}
+.navbar-brand img {
+    margin-right: 0.5rem;
+}
+.nav-links {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+}
+.nav-link {
+    color: var(--text-dark);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+.nav-link:hover {
+    color: var(--primary);
+}
+.sign-in-btn {
+    background-color: var(--primary);
+    color: var(--white);
+    border: none;
+    border-radius: 0.5rem;
+    padding: 0.5rem 1.5rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+.sign-in-btn:hover {
+    background-color: var(--primary-dark);
+}
+.main-section {
+    padding: 4rem 0;
+    min-height: calc(100vh - 76px);
+    display: flex;
+    align-items: center;
+}
+.upload-container {
+    background-color: var(--white);
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    transition: all 0.3s ease;
+}
+.upload-container:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+}
+#uploadForm {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+#uploadForm label {
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+#fileInput {
+    border: 2px dashed var(--primary);
+    border-radius: 0.5rem;
+    padding: 2rem;
+    width: 100%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+#fileInput:hover {
+    background-color: rgba(99, 102, 241, 0.05);
+}
+.image-preview {
+    display: none;
+    margin-top: 1rem;
+}
+.image-preview p {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+.image-preview img {
+    max-width: 100%;
+    max-height: 300px;
+    border-radius: 0.5rem;
+    border: 1px solid var(--secondary);
+}
+.btn-submit {
+    background-color: var(--primary);
+    color: var(--white);
+    border: none;
+    border-radius: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: fit-content;
+}
+.btn-submit:hover {
+    background-color: var(--primary-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+/* Image display container */
+.image-display-container {
+    background-color: var(--white);
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+.placeholder-image-container {
+    position: relative;
+    width: 100%;
+    height: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: 0.5rem;
+    background-color: #f3f4f6;
+}
+.placeholder-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease, opacity 0.5s ease;
+}
+.placeholder-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(79, 70, 229, 0.4));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--white);
+    text-align: center;
+    padding: 2rem;
+}
+.placeholder-overlay h3 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+.placeholder-overlay p {
+    font-size: 1rem;
+    max-width: 80%;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+.upload-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: var(--white);
+    animation: pulse 2s infinite;
+}
+.preview-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--white);
+}
+.preview-image {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    opacity: 0;
+    transform: scale(0.8);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.image-info {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+    color: var(--white);
+    padding: 1rem;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.image-info h4 {
+    margin-bottom: 0.5rem;
+    font-size: 1.2rem;
+}
+.image-info p {
+    margin-bottom: 0;
+    font-size: 0.9rem;
+}
+/* Animation classes */
+.floating {
+    animation: float 3s ease-in-out infinite;
+}
+@keyframes float {
+    0% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-15px);
+    }
+    100% {
+        transform: translateY(0px);
+    }
+}
+.pulse-animation {
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7);
+    }
+    
+    70% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 10px rgba(99, 102, 241, 0);
+    }
+    
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+    }
+}
+.fade-in {
+    animation: fadeIn 1s ease-in;
+}
+@keyframes fadeIn {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+}
+.slide-up {
+    animation: slideUp 0.8s ease-out;
+}
+@keyframes slideUp {
+    0% {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+/* Preserve the original loader styles */
+.main_loader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.9);
+    z-index: 1000;
+    flex-direction: column;
+}
+/* Responsive styles */
+@media (max-width: 992px) {
+    .main-section {
+        padding: 2rem 0;
+    }
+    
+    .image-display-container {
+        margin-top: 2rem;
+        height: 350px;
+    }
+    
+    .placeholder-image-container {
+        height: 300px;
+    }
+}
+@media (max-width: 768px) {
+    .nav-links {
+        gap: 1rem;
+    }
+    
+    .placeholder-overlay h3 {
+        font-size: 1.2rem;
+    }
+    
+    .placeholder-overlay p {
+        font-size: 0.9rem;
+    }
+}
+@media (max-width: 576px) {
+    .navbar {
+        padding: 1rem;
+    }
+    .nav-links {
+        display: none;
+    }
+    .mobile-menu-btn {
+        display: block;
+    }
+    
+    .image-display-container {
+        height: 300px;
+    }
+    
+    .placeholder-image-container {
+        height: 250px;
+    }
+}
+</style>
 <body>
+    <!-- Navbar -->
+    {% include 'navbar.html' %}
+   
+    <section class="main-section">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-6" data-aos="fade-right" data-aos-duration="1000">
+                    <div class="upload-container">
+                        <h2 class="mb-4"><i class="fas fa-file-alt"></i> Upload Answer Paper</h2>
+                        <form id="uploadForm" action="/upload_check" method="POST" enctype="multipart/form-data">
+                            <label for="student_name"><i class="fas fa-user"></i> Student Name:</label>
+                            <input type="text" id="student_name" name="student_name" placeholder="Enter student name" required>
 
-    <div class="container">
-        <h1><img src="static/favicon_io/SmartScribeLogo.png" width="50" height="50"> SmartScribe</h1>
+                            <label for="roll_number"><i class="fas fa-id-card"></i> Roll Number:</label>
+                            <input type="text" id="roll_number" name="roll_number" placeholder="Enter roll number" required>
 
-        <form id="uploadForm" action="/upload_check" method="POST" enctype="multipart/form-data">
-            <label for="student_name"><i class="fas fa-user"></i> Student Name:</label>
-            <input type="text" id="student_name" name="student_name" placeholder="Enter student name" required>
+                            <label for="answer_paper"><i class="fas fa-file-upload"></i> Upload Answer Paper:</label>
+                            <input type="file" id="fileInput" name="answer_paper" accept="image/*" required>
 
-            <label for="roll_number"><i class="fas fa-id-card"></i> Roll Number:</label>
-            <input type="text" id="roll_number" name="roll_number" placeholder="Enter roll number" required>
-            
-            <label for="answer_paper"><i class="fas fa-file-upload"></i> Upload Answer Paper:</label>
-            <input type="file" id="fileInput" name="answer_paper" accept="image/*" required>
-            <div class="image-preview" id="imagePreview">
-                <p>Image Preview:</p>
-                <img id="previewImg" src="" alt="Image Preview">
+                            <div class="image-preview" id="imagePreview">
+                                <p>Image Preview:</p>
+                                <img id="previewImg" src="/placeholder.svg" alt="Image Preview">
+                            </div>
+
+                            <button type="submit" class="btn-submit pulse-animation"><i class="fas fa-upload"></i> Submit</button>
+                        </form>
+                    </div>
+                </div>
+                <div class="col-lg-6" data-aos="fade-left" data-aos-duration="1000">
+                    <div class="image-display-container">
+                        <!-- Placeholder Image -->
+                        <div class="placeholder-image-container" id="placeholderContainer">
+                            <img src="https://images.unsplash.com/photo-1606326608606-aa0b62935f2b?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80" alt="Answer Key Template" class="placeholder-image">
+                            <div class="placeholder-overlay">
+                                <i class="fas fa-cloud-upload-alt upload-icon floating"></i>
+                                <h3>Upload Your Answer Key</h3>
+                                <p>Select an image file to see it displayed here with our AI-powered analysis</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Preview Container (Initially Hidden) -->
+                        <div class="preview-container" id="largePreviewContainer">
+                            <img id="largePreviewImg" src="/placeholder.svg" alt="Uploaded Image Preview" class="preview-image">
+                            <div class="image-info" id="imageInfo">
+                                <h4>Uploaded Answer Key</h4>
+                                <p>Ready for AI analysis</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-
-            <button type="submit" class="btn-submit"><i class="fas fa-upload"></i> Submit</button>
-        </form>
-    </div>
+        </div>
+    </section>
 
     <div class="main_loader" style="display:none; align-items: center; justify-content: center;">
-        <div class="loader">
-            <svg viewBox="0 0 80 80">
-                <circle id="test" cx="40" cy="40" r="32"></circle>
-            </svg>
-        </div>
-
-        <div class="loader triangle">
-            <svg viewBox="0 0 86 80">
-                <polygon points="43 8 79 72 7 72"></polygon>
-            </svg>
-        </div>
-
-        <div class="loader">
-            <svg viewBox="0 0 80 80">
-                <rect x="8" y="8" width="64" height="64"></rect>
-            </svg>
-        </div>
+        <div class="vector-container" id="lottie-container" width="300" height="200"></div>
         <p class="loader_message">
             <span class="typing">Answer evaluation in progress...</span>
             <br>
             <span class="blink">Please wait patiently, your results are on the way</span>
         </p>
     </div>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.9.6/lottie.min.js"></script>
 </body>
 <script>
     document.getElementById('fileInput').addEventListener('change', function(event) {
@@ -81,8 +447,45 @@
         if (file) {
             const reader = new FileReader();
             reader.onload = function(e) {
+                // Update small preview
                 document.getElementById('previewImg').src = e.target.result;
                 document.getElementById('imagePreview').style.display = 'block';
+                
+                // Update large preview with animation
+                const largePreviewImg = document.getElementById('largePreviewImg');
+                const largePreviewContainer = document.getElementById('largePreviewContainer');
+                const placeholderContainer = document.getElementById('placeholderContainer');
+                const imageInfo = document.getElementById('imageInfo');
+                
+                // Set the image source
+                largePreviewImg.src = e.target.result;
+                
+                // Fade out placeholder
+                placeholderContainer.style.opacity = '0';
+                
+                // After a short delay, show the preview
+                setTimeout(() => {
+                    placeholderContainer.style.display = 'none';
+                    largePreviewContainer.style.display = 'flex';
+                    
+                    // Trigger animations
+                    setTimeout(() => {
+                        largePreviewImg.style.opacity = '1';
+                        largePreviewImg.style.transform = 'scale(1)';
+                        
+                        // Show image info with delay
+                        setTimeout(() => {
+                            imageInfo.style.opacity = '1';
+                            imageInfo.style.transform = 'translateY(0)';
+                        }, 300);
+                    }, 100);
+                }, 500);
+                
+                // Update image info with file details
+                const fileName = file.name;
+                const fileSize = (file.size / 1024).toFixed(2) + ' KB';
+                document.querySelector('#imageInfo h4').textContent = fileName;
+                document.querySelector('#imageInfo p').textContent = `Size: ${fileSize} | Ready for analysis`;
             };
             reader.readAsDataURL(file);
         }
@@ -90,6 +493,30 @@
     document.getElementById('uploadForm').addEventListener('submit', function () {
         // Show the loader
         document.querySelector('.main_loader').style.display = 'flex';
+        document.querySelector('.typing').innerText = 'Answer Is Evaluating...';
+    });
+
+    const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+        const navLinks = document.querySelector('.nav-links');
+        
+        if (mobileMenuBtn) {
+            mobileMenuBtn.addEventListener('click', function() {
+                navLinks.classList.toggle('show');
+            });
+        }
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var animationContainer = document.getElementById("lottie-container");
+
+        var animation = lottie.loadAnimation({
+            container: animationContainer,
+            renderer: "svg",
+            loop: true,
+            autoplay: true,
+            path: "{{ url_for('static', filename='animations/computer.json') }}" 
+            // path: "/static/animations/upload.json"
+        });
     });
 </script>
 </html>

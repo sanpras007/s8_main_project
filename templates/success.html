@@ -5,6 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Success Page</title>
   <style>
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --secondary: #f3f4f6;
+      --text-dark: #1f2937;
+      --text-light: #6b7280;
+      --white: #ffffff;
+      --success: #22c55e;
+      --warning: #f59e0b;
+    }
     /* General Reset */
     * {
       margin: 0;
@@ -14,65 +24,76 @@
 
     body {
       font-family: 'Arial', sans-serif;
-      background: #000;
-      color: #fff;
+      color: var(--text-dark);
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
       overflow: hidden;
+      background: var(--secondary);
+      position: relative;
+    }
+
+    /* Background Elements */
+    .background {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      overflow: hidden;
+    }
+
+    .circle {
+      position: absolute;
+      border-radius: 50%;
+      background: var(--primary);
+      animation: float 15s infinite linear;
+    }
+
+    .square {
+      position: absolute;
+      background: var(--primary-dark);
+      transform: rotate(45deg);
+      animation: float 20s infinite linear;
     }
 
     /* Container for the Success Message */
     .success-container {
       text-align: center;
-      background: rgba(255, 255, 255, 0.05);
+      background: var(--white);
       padding: 60px 40px;
       border-radius: 20px;
-      backdrop-filter: blur(15px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      box-shadow: 0 0 50px rgba(76, 175, 80, 0.3);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
       position: relative;
       overflow: hidden;
       animation: fadeIn 1.5s ease-in-out;
+      z-index: 10;
+      backdrop-filter: blur(5px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
     }
 
-    /* Glowing Border Animation */
-    .success-container::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: conic-gradient(
-        transparent, transparent, transparent, #4caf50
-      );
-      animation: rotate 4s linear infinite;
-      z-index: -1;
-    }
-
-    .success-container::after {
-      content: '';
-      position: absolute;
-      inset: 4px;
-      background: rgba(0, 0, 0, 0.9);
-      border-radius: 16px;
-      z-index: -1;
-    }
-
-    /* Success Icon */
-    .success-icon {
-      font-size: 100px;
-      color: #4caf50;
-      animation: bounce 1.5s infinite, glow 2s infinite alternate;
+    /* Placeholder for Lottie Animation */
+    .lottie-placeholder {
+      width: 150px;
+      height: 150px;
+      margin: 0 auto 20px;
+      background: var(--secondary);
+      border-radius: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 24px;
+      color: var(--text-light);
+      animation: fadeIn 1s ease-in-out;
     }
 
     /* Success Heading */
     h1 {
       font-size: 3rem;
       margin: 20px 0;
-      background: linear-gradient(45deg, #4caf50, #81c784);
+      background: linear-gradient(45deg, var(--primary), var(--primary-dark));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       animation: slideIn 1s ease-in-out;
@@ -82,7 +103,7 @@
     p {
       font-size: 1.2rem;
       margin: 10px 0;
-      color: #ddd;
+      color: var(--text-light);
       animation: slideIn 1.2s ease-in-out;
     }
 
@@ -91,8 +112,8 @@
       margin-top: 30px;
       padding: 15px 30px;
       font-size: 1rem;
-      color: #fff;
-      background: linear-gradient(45deg, #4caf50, #81c784);
+      color: var(--white);
+      background: linear-gradient(45deg, var(--primary), var(--primary-dark));
       border: none;
       border-radius: 50px;
       cursor: pointer;
@@ -121,7 +142,7 @@
 
     .back-button:hover {
       transform: scale(1.1);
-      box-shadow: 0 0 20px rgba(76, 175, 80, 0.7);
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
     }
 
     /* Animations */
@@ -131,18 +152,6 @@
       }
       to {
         opacity: 1;
-      }
-    }
-
-    @keyframes bounce {
-      0%, 20%, 50%, 80%, 100% {
-        transform: translateY(0);
-      }
-      40% {
-        transform: translateY(-20px);
-      }
-      60% {
-        transform: translateY(-10px);
       }
     }
 
@@ -157,100 +166,135 @@
       }
     }
 
-    @keyframes rotate {
-      from {
-        transform: rotate(0deg);
-      }
-      to {
-        transform: rotate(360deg);
-      }
-    }
-
-    @keyframes glow {
-      from {
-        text-shadow: 0 0 10px #4caf50, 0 0 20px #4caf50, 0 0 30px #4caf50;
-      }
-      to {
-        text-shadow: 0 0 20px #4caf50, 0 0 40px #4caf50, 0 0 60px #4caf50;
-      }
-    }
-
-    /* Particle Background */
-    .particles {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: -2;
-    }
-
-    .particle {
-      position: absolute;
-      width: 2px;
-      height: 2px;
-      background: #4caf50;
-      border-radius: 50%;
-      animation: float 5s infinite ease-in-out;
-    }
-
     @keyframes float {
       0% {
-        transform: translateY(0) translateX(0);
+        transform: translateY(110vh) rotate(0deg);
         opacity: 0;
       }
-      50% {
+      10% {
         opacity: 1;
       }
+      90% {
+        opacity: 0.5;
+      }
       100% {
-        transform: translateY(-100vh) translateX(50vw);
+        transform: translateY(-10vh) rotate(360deg);
         opacity: 0;
       }
+    }
+
+    @keyframes pulse {
+      0% {
+        transform: scale(1);
+        opacity: 0.8;
+      }
+      50% {
+        transform: scale(1.1);
+        opacity: 0.4;
+      }
+      100% {
+        transform: scale(1);
+        opacity: 0.8;
+      }
+    }
+
+    #lottie-container {
+      height: 300px;
+      width: 300px;
     }
   </style>
 </head>
 <body>
-  <!-- Particle Background -->
-  <div class="particles">
-    <div class="particle" style="top: 10%; left: 20%; animation-delay: 0s;"></div>
-    <div class="particle" style="top: 30%; left: 50%; animation-delay: 1s;"></div>
-    <div class="particle" style="top: 50%; left: 70%; animation-delay: 2s;"></div>
-    <div class="particle" style="top: 70%; left: 10%; animation-delay: 3s;"></div>
-    <div class="particle" style="top: 90%; left: 40%; animation-delay: 4s;"></div>
+  <!-- Background Elements -->
+  <div class="background">
+    <!-- Dynamically created background elements will go here -->
   </div>
 
-  <!-- Success Container -->
+  <!-- Success Container - Kept exactly as requested -->
   <div class="success-container">
-    <!-- Success Icon -->
-    <div class="success-icon">✓</div>
+    <!-- Placeholder for Lottie Animation -->
+    <div class="lottie-placeholder" id="lottie-container">
+    </div>
 
     <!-- Success Heading -->
     <h1>Success!</h1>
 
     <!-- Success Message -->
-    <p>Your action has been completed successfully.</p>
+    <p>Your Answer Key Uploaded Successfully</p>
 
     <!-- Back Button -->
     <button class="back-button" onclick="goBack()">Go Back</button>
-    <button class="back-button" href="/">Go Home</button>
+    <button class="back-button" onclick="window.location.href='{{ url_for('home') }}'">Go Home</button>
   </div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.9.6/lottie.min.js"></script>
   <script>
-    // Function to go back to the previous page
+    document.addEventListener('DOMContentLoaded', function() {
+      // Create background elements
+      const background = document.querySelector('.background');
+      
+      // Create circles
+      for (let i = 0; i < 20; i++) {
+        const circle = document.createElement('div');
+        circle.classList.add('circle');
+        
+        // Random size between 20px and 100px
+        const size = Math.random() * 80 + 20;
+        circle.style.width = `${size}px`;
+        circle.style.height = `${size}px`;
+        
+        // Random position
+        circle.style.left = `${Math.random() * 100}%`;
+        
+        // Random animation duration and delay
+        const duration = Math.random() * 15 + 10;
+        const delay = Math.random() * 10;
+        circle.style.animation = `float ${duration}s infinite linear ${delay}s`;
+        
+        background.appendChild(circle);
+      }
+      
+      // Create squares
+      for (let i = 0; i < 15; i++) {
+        const square = document.createElement('div');
+        square.classList.add('square');
+        
+        // Random size between 20px and 80px
+        const size = Math.random() * 60 + 20;
+        square.style.width = `${size}px`;
+        square.style.height = `${size}px`;
+        
+        // Random position
+        square.style.left = `${Math.random() * 100}%`;
+        
+        // Random animation duration and delay
+        const duration = Math.random() * 20 + 15;
+        const delay = Math.random() * 10;
+        square.style.animation = `float ${duration}s infinite linear ${delay}s`;
+        
+        background.appendChild(square);
+      }
+
+      // Lottie animation
+      var animationContainer = document.getElementById("lottie-container");
+      var animation = lottie.loadAnimation({
+        container: animationContainer, 
+        renderer: "svg",
+        loop: true, 
+        autoplay: true,
+        path: "{{ url_for('static', filename='animations/success.json') }}" 
+      });
+      
+      // Initialize AOS if it exists
+      if (typeof AOS !== 'undefined') {
+        AOS.init();
+      }
+    });
+
     function goBack() {
       window.history.back();
-    }
-
-    // Add more particles dynamically
-    const particlesContainer = document.querySelector('.particles');
-    for (let i = 0; i < 20; i++) {
-      const particle = document.createElement('div');
-      particle.classList.add('particle');
-      particle.style.top = `${Math.random() * 100}%`;
-      particle.style.left = `${Math.random() * 100}%`;
-      particle.style.animationDelay = `${Math.random() * 5}s`;
-      particlesContainer.appendChild(particle);
     }
   </script>
 </body>
 </html>
+

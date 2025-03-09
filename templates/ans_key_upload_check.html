@@ -14,74 +14,216 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;700&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles/loader.css') }}">
+    <!-- AOS Animation Library -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
 
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/loader.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/upload.css') }}">
 
-    <style>
-    </style>
 
     <title>SmartScribe</title>
 </head>
-
 <body>
+    <!-- Navbar -->
+    {% include 'navbar.html' %}
 
-    <div class="container">
-        <h1><img src="static/favicon_io/SmartScribeLogo.png" width="50" height="50"> SmartScribe</h1>
+    <!-- Main Section -->
+    <section class="main-section">
+        <div class="container">
+            <div class="row">
+                <!-- Left Side - Upload Form -->
+                <div class="col-lg-6" data-aos="fade-right" data-aos-duration="1000">
+                    <div class="upload-container">
+                        <h2 class="mb-4"><i class="fas fa-file-alt"></i> Upload Answer Key</h2>
+                        <form id="uploadForm" action="/ans_key_check" method="POST" enctype="multipart/form-data">
+                            <label for="answer_key"><i class="fas fa-file-upload"></i> Upload Answer Key:</label>
+                            <input type="file" id="fileInput" name="answer_key" accept="image/*,application/pdf" required>
 
-        <form id="uploadForm" action="/ans_key_check" method="POST" enctype="multipart/form-data">
-            <label for="answer_key"><i class="fas fa-file-upload"></i> Upload Answer Key:</label>
-            <input type="file" id="fileInput" name="answer_key" accept="image/*" required>
+                            <div class="image-preview" id="imagePreview">
+                                <p>Image Preview:</p>
+                                <img id="previewImg" src="/placeholder.svg" alt="Image Preview">
+                            </div>
 
-            <div class="image-preview" id="imagePreview">
-                <p>Image Preview:</p>
-                <img id="previewImg" src="" alt="Image Preview">
+                            <button type="submit" class="btn-submit pulse-animation"><i class="fas fa-upload"></i> Submit</button>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Right Side - Image Display -->
+                <div class="col-lg-6" data-aos="fade-left" data-aos-duration="1000">
+                    <div class="image-display-container">
+                        <!-- Placeholder Image -->
+                        <div class="placeholder-image-container" id="placeholderContainer">
+                            <img src="https://images.unsplash.com/photo-1606326608606-aa0b62935f2b?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80" alt="Answer Key Template" class="placeholder-image">
+                            <div class="placeholder-overlay">
+                                <i class="fas fa-cloud-upload-alt upload-icon floating"></i>
+                                <h3>Upload Your Answer Key</h3>
+                                <p>Select an image file to see it displayed here with our AI-powered analysis</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Preview Container (Initially Hidden) -->
+                        <div class="preview-container" id="largePreviewContainer">
+                            <div id="pdfPreviewContainer" style="max-width: 100%; overflow-y: auto; height: 700px; border: 1px solid #ccc;"></div>
+                            <img id="largePreviewImg" src="/placeholder.svg" alt="Uploaded Image Preview" class="preview-image">
+                            <div class="image-info" id="imageInfo">
+                                <h4>Uploaded Answer Key</h4>
+                                <p>Ready for AI analysis</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
+        </div>
+    </section>
 
-            <button type="submit" class="btn-submit"><i class="fas fa-upload"></i> Submit</button>
-        </form>
-    </div>
-
+    <!-- Loader (preserved from original) -->
     <div class="main_loader" style="display:none; align-items: center; justify-content: center;">
-        <div class="loader">
-            <svg viewBox="0 0 80 80">
-                <circle cx="40" cy="40" r="32"></circle>
-            </svg>
-        </div>
-        <div class="loader triangle">
-            <svg viewBox="0 0 86 80">
-                <polygon points="43 8 79 72 7 72"></polygon>
-            </svg>
-        </div>
-        <div class="loader">
-            <svg viewBox="0 0 80 80">
-                <rect x="8" y="8" width="64" height="64"></rect>
-            </svg>
-        </div>
+        <div class="vector-container" id="lottie-container" style="width: 400px;"></div>
         <p class="loader_message">
-            <span class="typing">Answer key processing...</span>
+            <span class="typing">processing...</span>
             <br>
             <span class="blink">Please wait, we are analyzing the key</span>
         </p>
     </div>
+
+    <!-- AOS Animation Library -->
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.9.6/lottie.min.js"></script>
+    
+    <script>
+        // Initialize AOS animations
+        document.addEventListener('DOMContentLoaded', function() {
+            var animationContainer = document.getElementById("lottie-container");
+
+            var animation = lottie.loadAnimation({
+                container: animationContainer, 
+                renderer: "svg",
+                loop: true, 
+                autoplay: true,
+                path: "{{ url_for('static', filename='animations/upload.json') }}" 
+            });
+            AOS.init();
+        });
+
+        // File preview functionality with enhanced animation
+        document.getElementById('fileInput').addEventListener('change', function (event) {
+            const file = event.target.files[0];
+        
+            if (file) {
+                const fileType = file.type;
+                const reader = new FileReader();
+                const largePreviewImg = document.getElementById('largePreviewImg');
+                const pdfPreviewContainer = document.getElementById('pdfPreviewContainer');
+                const largePreviewContainer = document.getElementById('largePreviewContainer');
+                const placeholderContainer = document.getElementById('placeholderContainer');
+                const imageInfo = document.getElementById('imageInfo');
+        
+                if (fileType.includes('image')) {
+                    // Show image, hide PDF preview
+                    largePreviewImg.style.display = 'block';
+                    pdfPreviewContainer.style.display = 'none';
+                    pdfPreviewContainer.innerHTML = ''; // Clear any previous PDF previews
+        
+                    // Handle image preview
+                    reader.onload = function (e) {
+                        document.getElementById('previewImg').src = e.target.result;
+                        document.getElementById('imagePreview').style.display = 'block';
+        
+                        largePreviewImg.src = e.target.result;
+                        placeholderContainer.style.opacity = '0';
+        
+                        setTimeout(() => {
+                            placeholderContainer.style.display = 'none';
+                            largePreviewContainer.style.display = 'flex';
+        
+                            setTimeout(() => {
+                                largePreviewImg.style.opacity = '1';
+                                largePreviewImg.style.transform = 'scale(1)';
+                                setTimeout(() => {
+                                    imageInfo.style.opacity = '1';
+                                    imageInfo.style.transform = 'translateY(0)';
+                                }, 300);
+                            }, 100);
+                        }, 500);
+        
+                        // Update image info
+                        document.querySelector('#imageInfo h4').textContent = file.name;
+                        document.querySelector('#imageInfo p').textContent = `Size: ${(file.size / 1024).toFixed(2)} KB | Ready for analysis`;
+                    };
+                    reader.readAsDataURL(file);
+                } 
+                else if (fileType === 'application/pdf') {
+                    // Hide image, show PDF preview
+                    largePreviewImg.style.display = 'none';
+                    pdfPreviewContainer.style.display = 'block';
+                    pdfPreviewContainer.innerHTML = ''; // Clear previous content
+        
+                    // Handle PDF preview (Full Preview)
+                    reader.onload = function (e) {
+                        const pdfData = new Uint8Array(e.target.result);
+        
+                        pdfjsLib.getDocument({ data: pdfData }).promise.then(pdf => {
+                            for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                                pdf.getPage(pageNum).then(page => {
+                                    const scale = 1.5;
+                                    const viewport = page.getViewport({ scale });
+        
+                                    // Create a canvas for each page
+                                    const canvas = document.createElement('canvas');
+                                    canvas.classList.add('pdf-canvas');
+                                    pdfPreviewContainer.appendChild(canvas);
+        
+                                    const context = canvas.getContext('2d');
+                                    canvas.width = viewport.width;
+                                    canvas.height = viewport.height;
+        
+                                    const renderContext = {
+                                        canvasContext: context,
+                                        viewport: viewport
+                                    };
+                                    page.render(renderContext);
+                                });
+                            }
+                        });
+        
+                        setTimeout(() => {
+                            placeholderContainer.style.display = 'none';
+                            largePreviewContainer.style.display = 'block';
+        
+                            setTimeout(() => {
+                                imageInfo.style.opacity = '1';
+                                imageInfo.style.transform = 'translateY(0)';
+                            }, 300);
+                        }, 500);
+        
+                        // Update info for PDF
+                        document.querySelector('#imageInfo h4').textContent = file.name;
+                        document.querySelector('#imageInfo p').textContent = `Size: ${(file.size / 1024).toFixed(2)} KB | Ready for analysis`;
+                    };
+                    reader.readAsArrayBuffer(file);
+                }
+            }
+        });                
+
+        // Show loader on form submit (preserved from original)
+        document.getElementById('uploadForm').addEventListener('submit', function() {
+            document.querySelector('.main_loader').style.display = 'flex';
+            document.querySelector('.typing').innerText = 'Answer Key Is Processing...';
+        });
+
+        // Mobile menu toggle
+        const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+        const navLinks = document.querySelector('.nav-links');
+        
+        if (mobileMenuBtn) {
+            mobileMenuBtn.addEventListener('click', function() {
+                navLinks.classList.toggle('show');
+            });
+        }
+    </script>
 </body>
 
-<script>
-    document.getElementById('fileInput').addEventListener('change', function(event) {
-        const file = event.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                document.getElementById('previewImg').src = e.target.result;
-                document.getElementById('imagePreview').style.display = 'block';
-            };
-            reader.readAsDataURL(file);
-        }
-    });
-
-    document.getElementById('uploadForm').addEventListener('submit', function() {
-        document.querySelector('.main_loader').style.display = 'flex';
-    });
-</script>
-
 </html>
+
