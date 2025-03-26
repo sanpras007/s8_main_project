@@ -19,7 +19,9 @@ from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 from chatbot import get_answer_feedback,chat
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import create_access_token, JWTManager, jwt_required, get_jwt_identity
+from pdf2image import convert_from_path
+from PIL import Image
+
 
 
 app = Flask(__name__)
@@ -168,16 +170,24 @@ def check_similarity(sentence1, sentence2):
     return labels_probs
 
 
-def my_ocr(image_path,type):
+def my_ocr(image_input, type):
     try:
-        if(type == "plain"):
-            res = ocr_model.chat(tokenizer, image_path, ocr_type='ocr')
-            return res
+        if isinstance(image_input, Image.Image):
+            temp_path = "temp_image.png"
+            image_input.save(temp_path)  # Save image as file
+            image_input = temp_path  # Use the file path instead of image object
+
+        # Run OCR using the file path
+        if type == "plain":
+            res = ocr_model.chat(tokenizer, image_input, ocr_type='ocr')
         else:
-            res = ocr_model.chat(tokenizer, image_path, ocr_type='format')
-            return res
+            res = ocr_model.chat(tokenizer, image_input, ocr_type='format')
+
+        return res
     except Exception as e:
-        flash(f"An unexpected error occurred: {e}")
+        flash(f"An unexpected error occurred: {e}", "error")  # Ensure secret_key is set
+        return ""
+
 
 
 def evaluate_answers(student_answers):
@@ -215,7 +225,7 @@ def evaluate_answers(student_answers):
                 "feedback": feedback
             })
     examdata["totalmarks"] = total_marks
-    examdata["accuredmarks"] = acured_mark
+    examdata["accuredmarks"] = round(acured_mark, 1)
     examdata["result"] = questions
 
     return examdata
@@ -247,6 +257,18 @@ def extract_text_from_pdf(pdf_path):
     return text
 
 
+def extract_text_from_handwritten_pdf(pdf_path):
+    images = convert_from_path(pdf_path)
+    text = ""
+
+    for i, img in enumerate(images):
+        temp_image_path = f"temp_page_{i}.png"
+        img.save(temp_image_path, "PNG")  # Save image temporarily
+        text += my_ocr(temp_image_path, "format")
+        text += "\n"
+        os.remove(temp_image_path)  # Delete temporary file after processing
+    return text
+
 
 @app.route("/upload_check", methods=["POST"])
 def upload():
@@ -261,8 +283,10 @@ def upload():
 
         answer_paper.save(paper_path)
 
-        # Perform OCR on both images
-        student_answer_text = my_ocr(paper_path,"format")
+        if answer_paper.filename.endswith(".pdf"):
+            student_answer_text = extract_text_from_handwritten_pdf(paper_path)
+        else:
+            student_answer_text = my_ocr(paper_path,"format")
 
         pattern = r"(\d+)\.\s*(.*?)(?=\n\d+\.|\Z)"  # Matches question numbers and answers
 

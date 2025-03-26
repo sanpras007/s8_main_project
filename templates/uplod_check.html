@@ -25,357 +25,6 @@
 
     <title>SmartScribe</title>
 </head>
-<style>
-:root {
-    --primary: #6366f1;
-    --primary-dark: #4f46e5;
-    --secondary: #f3f4f6;
-    --text-dark: #1f2937;
-    --text-light: #6b7280;
-    --white: #ffffff;
-    --success: #22c55e;
-    --warning: #f59e0b;
-}
-body {
-    font-family: 'Ubuntu', sans-serif;
-    margin: 0;
-    padding: 0;
-    color: var(--text-dark);
-    background-color: #f9fafb;
-    overflow-x: hidden;
-}
-.navbar {
-    background-color: var(--white);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    padding: 1rem 0;
-}
-.navbar-brand {
-    display: flex;
-    align-items: center;
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--primary);
-    text-decoration: none;
-}
-.navbar-brand img {
-    margin-right: 0.5rem;
-}
-.nav-links {
-    display: flex;
-    gap: 2rem;
-    align-items: center;
-}
-.nav-link {
-    color: var(--text-dark);
-    text-decoration: none;
-    font-weight: 500;
-    transition: color 0.3s ease;
-}
-.nav-link:hover {
-    color: var(--primary);
-}
-.sign-in-btn {
-    background-color: var(--primary);
-    color: var(--white);
-    border: none;
-    border-radius: 0.5rem;
-    padding: 0.5rem 1.5rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-.sign-in-btn:hover {
-    background-color: var(--primary-dark);
-}
-.main-section {
-    padding: 4rem 0;
-    min-height: calc(100vh - 76px);
-    display: flex;
-    align-items: center;
-}
-.upload-container {
-    background-color: var(--white);
-    border-radius: 1rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    padding: 2rem;
-    transition: all 0.3s ease;
-}
-.upload-container:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
-}
-#uploadForm {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-}
-#uploadForm label {
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-#fileInput {
-    border: 2px dashed var(--primary);
-    border-radius: 0.5rem;
-    padding: 2rem;
-    width: 100%;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-#fileInput:hover {
-    background-color: rgba(99, 102, 241, 0.05);
-}
-.image-preview {
-    display: none;
-    margin-top: 1rem;
-}
-.image-preview p {
-    font-weight: 500;
-    margin-bottom: 0.5rem;
-}
-.image-preview img {
-    max-width: 100%;
-    max-height: 300px;
-    border-radius: 0.5rem;
-    border: 1px solid var(--secondary);
-}
-.btn-submit {
-    background-color: var(--primary);
-    color: var(--white);
-    border: none;
-    border-radius: 0.5rem;
-    padding: 0.75rem 1.5rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    width: fit-content;
-}
-.btn-submit:hover {
-    background-color: var(--primary-dark);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-/* Image display container */
-.image-display-container {
-    background-color: var(--white);
-    border-radius: 1rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    padding: 2rem;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    overflow: hidden;
-}
-.placeholder-image-container {
-    position: relative;
-    width: 100%;
-    height: 400px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    border-radius: 0.5rem;
-    background-color: #f3f4f6;
-}
-.placeholder-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.5s ease, opacity 0.5s ease;
-}
-.placeholder-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(79, 70, 229, 0.4));
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    color: var(--white);
-    text-align: center;
-    padding: 2rem;
-}
-.placeholder-overlay h3 {
-    font-size: 1.5rem;
-    margin-bottom: 1rem;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-.placeholder-overlay p {
-    font-size: 1rem;
-    max-width: 80%;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-}
-.upload-icon {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-    color: var(--white);
-    animation: pulse 2s infinite;
-}
-.preview-container {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    background-color: var(--white);
-}
-.preview-image {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-    border-radius: 0.5rem;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    opacity: 0;
-    transform: scale(0.8);
-    transition: opacity 0.5s ease, transform 0.5s ease;
-}
-.image-info {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
-    color: var(--white);
-    padding: 1rem;
-    opacity: 0;
-    transform: translateY(20px);
-    transition: opacity 0.5s ease, transform 0.5s ease;
-}
-.image-info h4 {
-    margin-bottom: 0.5rem;
-    font-size: 1.2rem;
-}
-.image-info p {
-    margin-bottom: 0;
-    font-size: 0.9rem;
-}
-/* Animation classes */
-.floating {
-    animation: float 3s ease-in-out infinite;
-}
-@keyframes float {
-    0% {
-        transform: translateY(0px);
-    }
-    50% {
-        transform: translateY(-15px);
-    }
-    100% {
-        transform: translateY(0px);
-    }
-}
-.pulse-animation {
-    animation: pulse 2s infinite;
-}
-@keyframes pulse {
-    0% {
-        transform: scale(1);
-        box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7);
-    }
-    
-    70% {
-        transform: scale(1.05);
-        box-shadow: 0 0 0 10px rgba(99, 102, 241, 0);
-    }
-    
-    100% {
-        transform: scale(1);
-        box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
-    }
-}
-.fade-in {
-    animation: fadeIn 1s ease-in;
-}
-@keyframes fadeIn {
-    0% { opacity: 0; }
-    100% { opacity: 1; }
-}
-.slide-up {
-    animation: slideUp 0.8s ease-out;
-}
-@keyframes slideUp {
-    0% {
-        opacity: 0;
-        transform: translateY(30px);
-    }
-    100% {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-/* Preserve the original loader styles */
-.main_loader {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(255, 255, 255, 0.9);
-    z-index: 1000;
-    flex-direction: column;
-}
-/* Responsive styles */
-@media (max-width: 992px) {
-    .main-section {
-        padding: 2rem 0;
-    }
-    
-    .image-display-container {
-        margin-top: 2rem;
-        height: 350px;
-    }
-    
-    .placeholder-image-container {
-        height: 300px;
-    }
-}
-@media (max-width: 768px) {
-    .nav-links {
-        gap: 1rem;
-    }
-    
-    .placeholder-overlay h3 {
-        font-size: 1.2rem;
-    }
-    
-    .placeholder-overlay p {
-        font-size: 0.9rem;
-    }
-}
-@media (max-width: 576px) {
-    .navbar {
-        padding: 1rem;
-    }
-    .nav-links {
-        display: none;
-    }
-    .mobile-menu-btn {
-        display: block;
-    }
-    
-    .image-display-container {
-        height: 300px;
-    }
-    
-    .placeholder-image-container {
-        height: 250px;
-    }
-}
-</style>
 <body>
     <!-- Navbar -->
     {% include 'navbar.html' %}
@@ -394,7 +43,7 @@ body {
                             <input type="text" id="roll_number" name="roll_number" placeholder="Enter roll number" required>
 
                             <label for="answer_paper"><i class="fas fa-file-upload"></i> Upload Answer Paper:</label>
-                            <input type="file" id="fileInput" name="answer_paper" accept="image/*" required>
+                            <input type="file" id="fileInput" name="answer_paper" accept="image/*,application/pdf" required>
 
                             <div class="image-preview" id="imagePreview">
                                 <p>Image Preview:</p>
@@ -419,6 +68,7 @@ body {
                         
                         <!-- Preview Container (Initially Hidden) -->
                         <div class="preview-container" id="largePreviewContainer">
+                            <div id="pdfPreviewContainer" style="max-width: 100%; overflow-y: auto; height: 700px; border: 1px solid #ccc;"></div>
                             <img id="largePreviewImg" src="/placeholder.svg" alt="Uploaded Image Preview" class="preview-image">
                             <div class="image-info" id="imageInfo">
                                 <h4>Uploaded Answer Key</h4>
@@ -439,57 +89,111 @@ body {
             <span class="blink">Please wait patiently, your results are on the way</span>
         </p>
     </div>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.9.6/lottie.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 </body>
 <script>
     document.getElementById('fileInput').addEventListener('change', function(event) {
         const file = event.target.files[0];
+
         if (file) {
+            const fileType = file.type;
             const reader = new FileReader();
-            reader.onload = function(e) {
-                // Update small preview
-                document.getElementById('previewImg').src = e.target.result;
-                document.getElementById('imagePreview').style.display = 'block';
-                
-                // Update large preview with animation
-                const largePreviewImg = document.getElementById('largePreviewImg');
-                const largePreviewContainer = document.getElementById('largePreviewContainer');
-                const placeholderContainer = document.getElementById('placeholderContainer');
-                const imageInfo = document.getElementById('imageInfo');
-                
-                // Set the image source
-                largePreviewImg.src = e.target.result;
-                
-                // Fade out placeholder
-                placeholderContainer.style.opacity = '0';
-                
-                // After a short delay, show the preview
-                setTimeout(() => {
-                    placeholderContainer.style.display = 'none';
-                    largePreviewContainer.style.display = 'flex';
-                    
-                    // Trigger animations
+            const largePreviewImg = document.getElementById('largePreviewImg');
+            const pdfPreviewContainer = document.getElementById('pdfPreviewContainer');
+            const largePreviewContainer = document.getElementById('largePreviewContainer');
+            const placeholderContainer = document.getElementById('placeholderContainer');
+            const imageInfo = document.getElementById('imageInfo');
+
+            if (fileType.includes('image')) {
+                // Show image, hide PDF preview
+                largePreviewImg.style.display = 'block';
+                pdfPreviewContainer.style.display = 'none';
+                pdfPreviewContainer.innerHTML = ''; // Clear any previous PDF previews
+
+                // Handle image preview
+                reader.onload = function (e) {
+                    document.getElementById('previewImg').src = e.target.result;
+                    document.getElementById('imagePreview').style.display = 'block';
+
+                    largePreviewImg.src = e.target.result;
+                    placeholderContainer.style.opacity = '0';
+
                     setTimeout(() => {
-                        largePreviewImg.style.opacity = '1';
-                        largePreviewImg.style.transform = 'scale(1)';
-                        
-                        // Show image info with delay
+                        placeholderContainer.style.display = 'none';
+                        largePreviewContainer.style.display = 'flex';
+
+                        setTimeout(() => {
+                            largePreviewImg.style.opacity = '1';
+                            largePreviewImg.style.transform = 'scale(1)';
+                            setTimeout(() => {
+                                imageInfo.style.opacity = '1';
+                                imageInfo.style.transform = 'translateY(0)';
+                            }, 300);
+                        }, 100);
+                    }, 500);
+
+                    // Update image info
+                    document.querySelector('#imageInfo h4').textContent = file.name;
+                    document.querySelector('#imageInfo p').textContent = `Size: ${(file.size / 1024).toFixed(2)} KB | Ready for analysis`;
+                };
+                reader.readAsDataURL(file);
+            } 
+            else if (fileType === 'application/pdf') {
+                // Hide image, show PDF preview
+                largePreviewImg.style.display = 'none';
+                pdfPreviewContainer.style.display = 'block';
+                pdfPreviewContainer.innerHTML = ''; // Clear previous content
+
+                // Handle PDF preview (Full Preview)
+                reader.onload = function (e) {
+                    const pdfData = new Uint8Array(e.target.result);
+
+                    pdfjsLib.getDocument({ data: pdfData }).promise.then(pdf => {
+                        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                            pdf.getPage(pageNum).then(page => {
+                                const scale = 1.5;
+                                const viewport = page.getViewport({ scale });
+
+                                // Create a canvas for each page
+                                const canvas = document.createElement('canvas');
+                                canvas.classList.add('pdf-canvas');
+                                pdfPreviewContainer.appendChild(canvas);
+
+                                const context = canvas.getContext('2d');
+                                canvas.width = viewport.width;
+                                canvas.height = viewport.height;
+
+                                const renderContext = {
+                                    canvasContext: context,
+                                    viewport: viewport
+                                };
+                                page.render(renderContext);
+                            });
+                        }
+                    });
+
+                    setTimeout(() => {
+                        placeholderContainer.style.display = 'none';
+                        largePreviewContainer.style.display = 'block';
+
                         setTimeout(() => {
                             imageInfo.style.opacity = '1';
                             imageInfo.style.transform = 'translateY(0)';
                         }, 300);
-                    }, 100);
-                }, 500);
-                
-                // Update image info with file details
-                const fileName = file.name;
-                const fileSize = (file.size / 1024).toFixed(2) + ' KB';
-                document.querySelector('#imageInfo h4').textContent = fileName;
-                document.querySelector('#imageInfo p').textContent = `Size: ${fileSize} | Ready for analysis`;
-            };
-            reader.readAsDataURL(file);
+                    }, 500);
+
+                    // Update info for PDF
+                    document.querySelector('#imageInfo h4').textContent = file.name;
+                    document.querySelector('#imageInfo p').textContent = `Size: ${(file.size / 1024).toFixed(2)} KB | Ready for analysis`;
+                };
+                reader.readAsArrayBuffer(file);
+            }
         }
     });
+
+
     document.getElementById('uploadForm').addEventListener('submit', function () {
         // Show the loader
         document.querySelector('.main_loader').style.display = 'flex';
