@@ -1,7 +1,7 @@
 import tensorflow as tf
 import transformers
 import asyncio
-from flask import Flask,flash, render_template, request
+from flask import Flask,flash, render_template, request, redirect, url_for, session
 from DB_operations import insert_to_db, delete_all, retrieve_all_answers,create_user, get_user_by_email
 from database import client
 import numpy as np
@@ -19,11 +19,25 @@ from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 from chatbot import get_answer_feedback,chat
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import create_access_token, JWTManager, jwt_required, get_jwt_identity
+from pdf2image import convert_from_path
+from PIL import Image
+from functools import wraps
+
 
 
 app = Flask(__name__)
 CORS(app, resources={r"/chat": {"origins": "http://127.0.0.1:5000"}})
+app.secret_key = 'your-secret-key-here'  # Add a secret key for session management
+
+# Add a decorator to protect routes that require authentication
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if "user_id" not in session:
+            flash("Please login to access this page", "warning")
+            return redirect(url_for("login"))
+        return f(*args, **kwargs)
+    return decorated_function
 
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -99,23 +113,28 @@ class BertSemanticDataGenerator(tf.keras.utils.Sequence):
 
 
 @app.route("/")
+@login_required
 def home():
     return render_template("main.html")
 
 
 @app.route("/checkMyAnswer")
+@login_required
 def checkMyAnswer():
     return render_template("checkMyAnswer.html")
 
 @app.route("/answers")
+@login_required
 def answers():
     return render_template("answers.html")
 
 @app.route("/upload")
+@login_required
 def upolad_check():
     return render_template("uplod_check.html")
 
 @app.route("/answerkey_upload")
+@login_required
 def answerkey_upload():
     return render_template("ans_key_upload_check.html")
 
@@ -168,16 +187,24 @@ def check_similarity(sentence1, sentence2):
     return labels_probs
 
 
-def my_ocr(image_path,type):
+def my_ocr(image_input, type):
     try:
-        if(type == "plain"):
-            res = ocr_model.chat(tokenizer, image_path, ocr_type='ocr')
-            return res
+        if isinstance(image_input, Image.Image):
+            temp_path = "temp_image.png"
+            image_input.save(temp_path)  # Save image as file
+            image_input = temp_path  # Use the file path instead of image object
+
+        # Run OCR using the file path
+        if type == "plain":
+            res = ocr_model.chat(tokenizer, image_input, ocr_type='ocr')
         else:
-            res = ocr_model.chat(tokenizer, image_path, ocr_type='format')
-            return res
+            res = ocr_model.chat(tokenizer, image_input, ocr_type='format')
+
+        return res
     except Exception as e:
-        flash(f"An unexpected error occurred: {e}")
+        flash(f"An unexpected error occurred: {e}", "error")  # Ensure secret_key is set
+        return ""
+
 
 
 def evaluate_answers(student_answers):
@@ -215,13 +242,14 @@ def evaluate_answers(student_answers):
                 "feedback": feedback
             })
     examdata["totalmarks"] = total_marks
-    examdata["accuredmarks"] = acured_mark
+    examdata["accuredmarks"] = round(acured_mark, 1)
     examdata["result"] = questions
 
     return examdata
 
 
 @app.route("/ans_key_check", methods=["POST"])
+@login_required
 def ans_key_upload():
     if request.method == 'POST':
         if "answer_key" not in request.files:
@@ -247,8 +275,21 @@ def extract_text_from_pdf(pdf_path):
     return text
 
 
+def extract_text_from_handwritten_pdf(pdf_path):
+    images = convert_from_path(pdf_path)
+    text = ""
+
+    for i, img in enumerate(images):
+        temp_image_path = f"temp_page_{i}.png"
+        img.save(temp_image_path, "PNG")  # Save image temporarily
+        text += my_ocr(temp_image_path, "format")
+        text += "\n"
+        os.remove(temp_image_path)  # Delete temporary file after processing
+    return text
+
 
 @app.route("/upload_check", methods=["POST"])
+@login_required
 def upload():
     if request.method == 'POST':
         if "answer_paper" not in request.files:
@@ -261,8 +302,10 @@ def upload():
 
         answer_paper.save(paper_path)
 
-        # Perform OCR on both images
-        student_answer_text = my_ocr(paper_path,"format")
+        if answer_paper.filename.endswith(".pdf"):
+            student_answer_text = extract_text_from_handwritten_pdf(paper_path)
+        else:
+            student_answer_text = my_ocr(paper_path,"format")
 
         pattern = r"(\d+)\.\s*(.*?)(?=\n\d+\.|\Z)"  # Matches question numbers and answers
 
@@ -283,6 +326,7 @@ def upload():
 
 
 @app.route("/predict", methods=["POST"])
+@login_required
 def predict():
     if request.method == 'POST':
         student_ans = request.form.get('student_ans')
@@ -308,11 +352,13 @@ def predict():
 
 
 @app.route("/result")
+@login_required
 def result():
     return render_template("result.html")
 
 
 @app.route("/chat", methods=["POST"])
+@login_required
 def user_chat():
     try:
         data = request.json
@@ -330,48 +376,70 @@ def user_chat():
         return jsonify({"error": "Internal Server Error"}), 500
 
 
-# @app.route("/auth")
-# def auth():
-#     return render_template("auth.html")
+@app.route("/login", methods=["GET", "POST"])
+async def login():
+    if request.method == "GET":
+        return render_template("login.html")
+    
+    email = request.form.get("email")
+    password = request.form.get("password")
+    
+    if not email or not password:
+        flash("Please fill in all fields", "danger")
+        return redirect(url_for("login"))
+    
+    user = await get_user_by_email(email)
+    if not user:
+        flash("User not found", "danger")
+        return redirect(url_for("login"))
+    
+    is_valid = await asyncio.to_thread(
+        bcrypt.checkpw, password.encode('utf-8'), user["password"]
+    )
+    
+    if is_valid:
+        session["user_id"] = str(user["_id"])
+        session["email"] = user["email"]
+        session["name"] = user["name"]
+        flash("Login successful!", "success")
+        return redirect(url_for("home"))
+    
+    flash("Invalid credentials", "danger")
+    return redirect(url_for("login"))
 
 
+@app.route("/signup", methods=["GET", "POST"])
+async def signup():
+    if request.method == "GET":
+        return render_template("signup.html")
+    
+    name = request.form.get("name")
+    email = request.form.get("email")
+    password = request.form.get("password")
+    confirm_password = request.form.get("confirm_password")
+    
+    if not all([name, email, password, confirm_password]):
+        flash("Please fill in all fields", "danger")
+        return redirect(url_for("signup"))
+    
+    if password != confirm_password:
+        flash("Passwords do not match", "danger")
+        return redirect(url_for("signup"))
+    
+    result = await create_user(name, email, password)
+    if "error" in result:
+        flash(result["error"], "danger")
+        return redirect(url_for("signup"))
+    
+    flash("Account created successfully! Please login.", "success")
+    return redirect(url_for("login"))
 
-# @app.route("/signup", methods=["POST"])
-# async def signup():
-#     """Signup a user."""
-#     data = request.json
-#     name, email, password = data.get("name"), data.get("email"), data.get("password")
 
-#     if not name or not email or not password:
-#         return jsonify({"error": "Missing fields"}), 400
-
-#     result = await create_user(name, email, password)
-#     if "error" in result:
-#         return jsonify(result), 400
-
-#     return jsonify(result), 201
-
-
-# @app.route("/login", methods=["POST"])
-# async def login():
-#     """Login a user and return JWT."""
-#     data = request.json
-#     email, password = data.get("email"), data.get("password")
-
-#     user = await get_user_by_email(email)
-#     if not user:
-#         return jsonify({"error": "User not found"}), 404
-
-#     # bcrypt is not async, so run it in a separate thread
-#     is_valid = await asyncio.to_thread(
-#         bcrypt.checkpw, password.encode('utf-8'), user["password"]
-#     )
-
-#     if is_valid:
-#         access_token = create_access_token(identity=email)
-#         return jsonify({"access_token": access_token}), 200
-
-#     return jsonify({"error": "Invalid credentials"}), 401
+@app.route("/logout")
+def logout():
+    session.clear()
+    flash("You have been logged out", "info")
+    return redirect(url_for("login"))
 
 
 if __name__ == '__main__':
