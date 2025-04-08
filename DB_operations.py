@@ -89,29 +89,34 @@ async def delete_all(db_name):
 
 async def create_user(name, email, password):
     """Hash password and store user in DB."""
-    hashed_pw = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
     try:
         db = await connect_db()
         users_collection = db["users"]
+        
+        # Check if user exists first
+        existing_user = users_collection.find_one({"email": email})
+        if existing_user:
+            return {"error": "Email already registered"}
+        
+        hashed_pw = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
         user = {
             "name": name,
             "email": email,
             "password": hashed_pw
         }
         
-        if users_collection.find_one({"email": email}):
-            return {"error": "User already exists"}
-        
-        users_collection.insert_one(user)
-        return {"message": "User registered successfully"}
+        result = users_collection.insert_one(user)
+        return {"message": "User registered successfully", "user_id": str(result.inserted_id)}
     except Exception as e:
-        print(f"⚠️ Error creating data: {e}")
+        print(f"⚠️ Error creating user: {e}")
+        return {"error": "Failed to create user"}
 
 async def get_user_by_email(email):
-    """Retrieve a user by email (excluding `_id`)."""
+    """Retrieve a user by email."""
     try:
         db = await connect_db()
         users_collection = db["users"]
-        return users_collection.find_one({"email": email}, {"_id": 0})  # Exclude `_id`
+        return users_collection.find_one({"email": email})  # Include _id field
     except Exception as e:
-        print(f"⚠️ Error creating data: {e}")
+        print(f"⚠️ Error retrieving user: {e}")
+        return None

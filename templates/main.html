@@ -26,7 +26,14 @@
                         <li><a href="/answerkey_upload">Upload Answer Key</a></li>
                         <li><a href="/checkMyAnswer">Check My Answer</a></li>
                     </ul>
-                    <a href="/auth" class="btn btn-primary">Sign In</a>
+                    {% if session.get('user_id') %}
+                        <div class="user-info">
+                            <span class="user-name">{{ session.get('name', 'User') }}</span>
+                            <a href="/logout" class="btn btn-primary">Logout</a>
+                        </div>
+                    {% else %}
+                        <a href="/login" class="btn btn-primary">Login</a>
+                    {% endif %}
                 </nav>
                 
                 <button class="mobile-menu-btn" id="mobileMenuBtn">
@@ -39,7 +46,14 @@
                     <li><a href="/upload">SmartScribe</a></li>
                     <li><a href="/answerkey_upload">Upload Answer Key</a></li>
                     <li><a href="/checkMyAnswer">Check My Answer</a></li>
-                    <li><a href="/auth" class="btn btn-primary">Sign In</a></li>
+                    {% if session.get('user_id') %}
+                        <li class="user-info-mobile">
+                            <span class="user-name">{{ session.get('name', 'User') }}</span>
+                            <a href="/logout" class="btn btn-primary">Logout</a>
+                        </li>
+                    {% else %}
+                        <li><a href="/login" class="btn btn-primary">Login</a></li>
+                    {% endif %}
                 </ul>
             </div>
         </div>
